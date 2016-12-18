@@ -1,5 +1,6 @@
 
 #include "GestureMatcher.h"
+//#include "pch.h"
 
 const Vector GestureMatcher::RightVector = Vector(-1,  0,  0);
 const Vector GestureMatcher::InVector    = Vector( 0,  1,  0);
