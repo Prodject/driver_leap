@@ -47,6 +47,22 @@ GestureMatcher::~GestureMatcher()
 {
 }
 
+bool GestureMatcher::HandFound(const Frame &frame, WhichHand which)
+{
+	HandList &hands = frame.hands();
+	for (int i = 0; i < hands.count(); i++)
+	{
+		if (!hands[i].isValid())
+			continue;
+
+		if ((hands[i].isLeft() && which == RightHand) || (hands[i].isRight() && which == LeftHand))
+			continue;
+
+		return true;
+	}
+	return false;
+}
+
 bool GestureMatcher::MatchGestures(const Frame &frame, WhichHand which, float(&result)[NUM_GESTURES],
                                    Vector right, Vector in, Vector up)
 {

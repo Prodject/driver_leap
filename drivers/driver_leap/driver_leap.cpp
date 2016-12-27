@@ -400,6 +400,22 @@ vr::EVRInitError CServerDriver_Leap::Init( vr::IDriverLog * pDriverLog, vr::ISer
 
     m_Controller->addListener(*this);
 
+	vr::IVRSettings *settings = m_pDriverHost->GetSettings(vr::IVRSettings_Version);
+	bool useUdp = settings->GetBool("combinedLeap", "useUdpController", true);
+	bool useSerial = settings->GetBool("combinedLeap", "useSerialController", true);
+
+
+	controllerData = new CustomController::ControllerData;
+	if (useSerial)
+	{
+		serialReader = new SocketReaderPlugin::SerialReader;
+	}
+
+	if (useUdp)
+	{
+		udpReader = new SocketReaderPlugin::UdpSocket;
+	}
+
     return vr::VRInitError_None;
 }
 
@@ -422,6 +438,24 @@ void CServerDriver_Leap::Cleanup()
         delete m_Controller;
         m_Controller = NULL;
     }
+
+	if (controllerData)
+	{
+		delete controllerData;
+		controllerData = NULL;
+	}
+
+	if (serialReader)
+	{
+		delete serialReader;
+		serialReader = NULL;
+	}
+
+	if (udpReader)
+	{
+		delete udpReader;
+		udpReader = NULL;
+	}
 
     // clean up any controller objects we've created
     for (auto it = m_vecControllers.begin(); it != m_vecControllers.end(); ++it)
@@ -454,6 +488,7 @@ vr::ITrackedDeviceServerDriver * CServerDriver_Leap::FindTrackedDeviceDriver( co
     return nullptr;
 }
 
+// Called by the VR server
 void CServerDriver_Leap::RunFrame()
 {
     if (m_vecControllers.size() == 2)
@@ -474,7 +509,7 @@ void CServerDriver_Leap::RunFrame()
                 if (pLeap->IsActivated())
                 {
                     // Returns true if this is new data (so we can sleep for long interval)
-                    if (!pLeap->Update(frame))
+                    if (!pLeap->Update(frame, controllerData))
                     {
                         // not updated?
                     }
@@ -675,6 +710,8 @@ vr::EVRInitError CLeapHmdLatest::Activate( uint32_t unObjectId )
     m_unSteamVRTrackedDeviceId = unObjectId;
 
     g_ServerTrackedDeviceProvider.LaunchLeapMonitor();
+
+	
 
     return vr::VRInitError_None;
 }
@@ -894,7 +931,7 @@ void CLeapHmdLatest::SendButtonUpdates( ButtonUpdate ButtonEvent, uint64_t ulMas
     }
 }
 
-void CLeapHmdLatest::UpdateControllerState(Frame &frame)
+void CLeapHmdLatest::UpdateControllerState(Frame &frame, CustomController::ControllerData* controllerData)
 {
     vr::VRControllerState_t NewState = { 0 };
 
@@ -903,78 +940,152 @@ void CLeapHmdLatest::UpdateControllerState(Frame &frame)
                                       (m_nId == RIGHT_CONTROLLER) ? GestureMatcher::RightHand :
                                       GestureMatcher::AnyHand;
 
-    float scores[GestureMatcher::NUM_GESTURES];
-    handFound = matcher.MatchGestures(frame, which, scores);
+	handFound = matcher.HandFound(frame, which);
 
-    if (handFound)
-    {
-        // Changing unPacketNum tells anyone polling state that something might have
-        // changed.  We don't try to be precise about that here.
-        NewState.unPacketNum = m_ControllerState.unPacketNum + 1;
+#pragma region Original
+//	float scores[GestureMatcher::NUM_GESTURES];
+//	handFound = matcher.MatchGestures(frame, which, scores);
+//
+//	if (handFound)
+//	{
+//		// Changing unPacketNum tells anyone polling state that something might have
+//		// changed.  We don't try to be precise about that here.
+//		NewState.unPacketNum = m_ControllerState.unPacketNum + 1;
+//
+//		// system menu mapping (timeout gesture)
+//		if (scores[GestureMatcher::Timeout] >= 0.5f)
+//			NewState.ulButtonTouched |= vr::ButtonMaskFromId(vr::k_EButton_System);
+//		if (scores[GestureMatcher::Timeout] >= 0.5f)
+//			NewState.ulButtonPressed |= vr::ButtonMaskFromId(vr::k_EButton_System);
+//
+//		// application menu mapping (Flat hand towards your face gesture)
+//		if (scores[GestureMatcher::FlatHandPalmTowards] >= 0.8f)
+//			NewState.ulButtonTouched |= vr::ButtonMaskFromId(vr::k_EButton_ApplicationMenu);
+//		if (scores[GestureMatcher::FlatHandPalmTowards] >= 0.8f)
+//			NewState.ulButtonPressed |= vr::ButtonMaskFromId(vr::k_EButton_ApplicationMenu);
+//
+//		// digital trigger mapping (fist clenching gesture)
+//		if (scores[GestureMatcher::TriggerFinger] > 0.5f)
+//			NewState.ulButtonTouched |= vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger);
+//		if (scores[GestureMatcher::TriggerFinger] > 0.5f)
+//			NewState.ulButtonPressed |= vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger);
+//
+//		// grip mapping (clench fist with middle, index, pinky fingers)
+//		if (scores[GestureMatcher::LowerFist] >= 0.5f)
+//			NewState.ulButtonTouched |= vr::ButtonMaskFromId(vr::k_EButton_Grip);
+//		if (scores[GestureMatcher::LowerFist] >= 0.5f)
+//			NewState.ulButtonPressed |= vr::ButtonMaskFromId(vr::k_EButton_Grip);
+//
+//		// touchpad button press mapping (Thumbpress gesture)
+//		if (scores[GestureMatcher::Thumbpress] >= 0.2f)
+//			NewState.ulButtonTouched |= vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Touchpad);
+//		if (scores[GestureMatcher::Thumbpress] >= 1.0f)
+//			NewState.ulButtonPressed |= vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Touchpad);
+//
+//#if 0
+//		// sixense driver seems to have good deadzone, but add a small one here
+//		if (fabsf(cd.joystick_x) > 0.03f || fabsf(cd.joystick_y) > 0.03f)
+//			NewState.ulButtonTouched |= vr::ButtonMaskFromId(vr::k_EButton_StreamVR_Touchpad);
+//#endif
+//
+//		// All pressed buttons are touched
+//		NewState.ulButtonTouched |= NewState.ulButtonPressed;
+//
+//		uint64_t ulChangedTouched = NewState.ulButtonTouched ^ m_ControllerState.ulButtonTouched;
+//		uint64_t ulChangedPressed = NewState.ulButtonPressed ^ m_ControllerState.ulButtonPressed;
+//
+//		SendButtonUpdates(&vr::IServerDriverHost::TrackedDeviceButtonTouched, ulChangedTouched & NewState.ulButtonTouched);
+//		SendButtonUpdates(&vr::IServerDriverHost::TrackedDeviceButtonPressed, ulChangedPressed & NewState.ulButtonPressed);
+//		SendButtonUpdates(&vr::IServerDriverHost::TrackedDeviceButtonUnpressed, ulChangedPressed & ~NewState.ulButtonPressed);
+//		SendButtonUpdates(&vr::IServerDriverHost::TrackedDeviceButtonUntouched, ulChangedTouched & ~NewState.ulButtonTouched);
+//
+//		NewState.rAxis[0].x = scores[GestureMatcher::TouchpadAxisX];
+//		NewState.rAxis[0].y = scores[GestureMatcher::TouchpadAxisY];
+//
+//		NewState.rAxis[1].x = scores[GestureMatcher::TriggerFinger];
+//		NewState.rAxis[1].y = 0.0f;
+//
+//		// the touchpad maps to Axis 0 X/Y
+//		if (NewState.rAxis[0].x != m_ControllerState.rAxis[0].x || NewState.rAxis[0].y != m_ControllerState.rAxis[0].y)
+//			m_pDriverHost->TrackedDeviceAxisUpdated(m_unSteamVRTrackedDeviceId, 0, NewState.rAxis[0]);
+//
+//		// trigger maps to Axis 1 X
+//		if (NewState.rAxis[1].x != m_ControllerState.rAxis[1].x)
+//			m_pDriverHost->TrackedDeviceAxisUpdated(m_unSteamVRTrackedDeviceId, 1, NewState.rAxis[1]);
+//
+//		m_ControllerState = NewState;
+//	}
+#pragma endregion
 
-        // system menu mapping (timeout gesture)
-        if (scores[GestureMatcher::Timeout] >= 0.5f)
-            NewState.ulButtonTouched |= vr::ButtonMaskFromId(vr::k_EButton_System);
-        if (scores[GestureMatcher::Timeout] >= 0.5f)
-            NewState.ulButtonPressed |= vr::ButtonMaskFromId(vr::k_EButton_System);
+#pragma region Custom controller button input
+	{
+		// Read controller data
+		NewState.unPacketNum = m_ControllerState.unPacketNum + 1;
 
-        // application menu mapping (Flat hand towards your face gesture)
-        if (scores[GestureMatcher::FlatHandPalmTowards] >= 0.8f)
-            NewState.ulButtonTouched |= vr::ButtonMaskFromId(vr::k_EButton_ApplicationMenu);
-        if (scores[GestureMatcher::FlatHandPalmTowards] >= 0.8f)
-            NewState.ulButtonPressed |= vr::ButtonMaskFromId(vr::k_EButton_ApplicationMenu);
+		// Menu button
+		if (controllerData->state.btn_menu)
+		{
+			NewState.ulButtonPressed |= vr::ButtonMaskFromId(vr::k_EButton_ApplicationMenu);
+		}
+		// Grip button
+		if (controllerData->state.btn_grip)
+		{
+			NewState.ulButtonPressed |= vr::ButtonMaskFromId(vr::k_EButton_Grip);
+		}
+		// System button
+		if (controllerData->state.btn_system)
+		{
+			NewState.ulButtonPressed |= vr::ButtonMaskFromId(vr::k_EButton_System);
+		}
+		// Trigger
+		if (controllerData->state.btn_trigger)
+		{
+			NewState.ulButtonPressed |= vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger);
+		}
+		// Touchpad pressed
+		if (controllerData->state.btn_touchpadPress)
+		{
+			NewState.ulButtonPressed |= vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Touchpad);
+		}
 
-        // digital trigger mapping (fist clenching gesture)
-        if (scores[GestureMatcher::TriggerFinger] > 0.5f)
-            NewState.ulButtonTouched |= vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger);
-        if (scores[GestureMatcher::TriggerFinger] > 0.5f)
-            NewState.ulButtonPressed |= vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger);
+		// Touchpad touched
+		if (controllerData->state.trackpad_touched)
+		{
+			NewState.ulButtonTouched |= vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Touchpad);
+		}
 
-        // grip mapping (clench fist with middle, index, pinky fingers)
-        if (scores[GestureMatcher::LowerFist] >= 0.5f)
-            NewState.ulButtonTouched |= vr::ButtonMaskFromId(vr::k_EButton_Grip);
-        if (scores[GestureMatcher::LowerFist] >= 0.5f)
-            NewState.ulButtonPressed |= vr::ButtonMaskFromId(vr::k_EButton_Grip);
+		// All pressed buttons are touched
+		NewState.ulButtonTouched |= NewState.ulButtonPressed;
 
-        // touchpad button press mapping (Thumbpress gesture)
-        if (scores[GestureMatcher::Thumbpress] >= 0.2f)
-            NewState.ulButtonTouched |= vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Touchpad);
-        if (scores[GestureMatcher::Thumbpress] >= 1.0f)
-            NewState.ulButtonPressed |= vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Touchpad);
+		// Button touch and press state updates
+		uint64_t ulChangedTouched = NewState.ulButtonTouched ^ m_ControllerState.ulButtonTouched;
+		uint64_t ulChangedPressed = NewState.ulButtonPressed ^ m_ControllerState.ulButtonPressed;
 
-#if 0
-        // sixense driver seems to have good deadzone, but add a small one here
-        if (fabsf(cd.joystick_x) > 0.03f || fabsf(cd.joystick_y) > 0.03f)
-            NewState.ulButtonTouched |= vr::ButtonMaskFromId(vr::k_EButton_StreamVR_Touchpad);
-#endif
+		SendButtonUpdates(&vr::IServerDriverHost::TrackedDeviceButtonTouched, ulChangedTouched & NewState.ulButtonTouched);
+		SendButtonUpdates(&vr::IServerDriverHost::TrackedDeviceButtonPressed, ulChangedPressed & NewState.ulButtonPressed);
+		SendButtonUpdates(&vr::IServerDriverHost::TrackedDeviceButtonUnpressed, ulChangedPressed & ~NewState.ulButtonPressed);
+		SendButtonUpdates(&vr::IServerDriverHost::TrackedDeviceButtonUntouched, ulChangedTouched & ~NewState.ulButtonTouched);
 
-        // All pressed buttons are touched
-        NewState.ulButtonTouched |= NewState.ulButtonPressed;
+		// Touchpad touch point
+		NewState.rAxis[0].x = controllerData->state.touchpadX;
+		NewState.rAxis[0].y = controllerData->state.touchpadY;
 
-        uint64_t ulChangedTouched = NewState.ulButtonTouched ^ m_ControllerState.ulButtonTouched;
-        uint64_t ulChangedPressed = NewState.ulButtonPressed ^ m_ControllerState.ulButtonPressed;
+		// Trigger axis
+		NewState.rAxis[1].x = controllerData->state.btn_trigger ? 1.0 : 0.0;
+		NewState.rAxis[1].y = 0.0;
 
-        SendButtonUpdates(&vr::IServerDriverHost::TrackedDeviceButtonTouched, ulChangedTouched & NewState.ulButtonTouched);
-        SendButtonUpdates(&vr::IServerDriverHost::TrackedDeviceButtonPressed, ulChangedPressed & NewState.ulButtonPressed);
-        SendButtonUpdates(&vr::IServerDriverHost::TrackedDeviceButtonUnpressed, ulChangedPressed & ~NewState.ulButtonPressed);
-        SendButtonUpdates(&vr::IServerDriverHost::TrackedDeviceButtonUntouched, ulChangedTouched & ~NewState.ulButtonTouched);
+		// Axis change updates
+		// the touchpad maps to Axis 0 X/Y
+		if (NewState.rAxis[0].x != m_ControllerState.rAxis[0].x || NewState.rAxis[0].y != m_ControllerState.rAxis[0].y)
+			m_pDriverHost->TrackedDeviceAxisUpdated(m_unSteamVRTrackedDeviceId, 0, NewState.rAxis[0]);
 
-        NewState.rAxis[0].x = scores[GestureMatcher::TouchpadAxisX];
-        NewState.rAxis[0].y = scores[GestureMatcher::TouchpadAxisY];
+		// trigger maps to Axis 1 X
+		if (NewState.rAxis[1].x != m_ControllerState.rAxis[1].x)
+			m_pDriverHost->TrackedDeviceAxisUpdated(m_unSteamVRTrackedDeviceId, 1, NewState.rAxis[1]);
 
-        NewState.rAxis[1].x = scores[GestureMatcher::TriggerFinger];
-        NewState.rAxis[1].y = 0.0f;
-
-        // the touchpad maps to Axis 0 X/Y
-        if (NewState.rAxis[0].x != m_ControllerState.rAxis[0].x || NewState.rAxis[0].y != m_ControllerState.rAxis[0].y)
-            m_pDriverHost->TrackedDeviceAxisUpdated(m_unSteamVRTrackedDeviceId, 0, NewState.rAxis[0]);
-
-        // trigger maps to Axis 1 X
-        if (NewState.rAxis[1].x != m_ControllerState.rAxis[1].x)
-            m_pDriverHost->TrackedDeviceAxisUpdated(m_unSteamVRTrackedDeviceId, 1, NewState.rAxis[1]);
-
-        m_ControllerState = NewState;
-    }
+		m_ControllerState = NewState;
+	}
+#pragma endregion
 }
 
 // multiplication of quaternions
@@ -1052,7 +1163,7 @@ static vr::HmdQuaternion_t CalculateRotation(float(*a)[3]) {
     return q;
 }
 
-void CLeapHmdLatest::UpdateTrackingState(Frame &frame)
+void CLeapHmdLatest::UpdateTrackingState(Frame &frame, CustomController::ControllerData* controllerData)
 {
     HandList &hands = frame.hands();
 
@@ -1228,10 +1339,10 @@ bool CLeapHmdLatest::HasControllerId( int nBase, int nId )
 }
 
 /** Process sixenseControllerData.  Return true if it's new to help caller manage sleep durations */
-bool CLeapHmdLatest::Update(Frame &frame)
+bool CLeapHmdLatest::Update(Frame &frame, CustomController::ControllerData* controllerData)
 {
-    UpdateTrackingState(frame);
-    UpdateControllerState(frame);
+    UpdateTrackingState(frame, controllerData); // Controller position
+    UpdateControllerState(frame, controllerData); // Controller buttons & input
 
     return true;
 }

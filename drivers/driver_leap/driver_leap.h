@@ -13,6 +13,10 @@
 #include "Leap.h"
 #include "GestureMatcher.h"
 
+#include "ControllerData.h"
+#include "SocketReaderPlugin.h"
+#include "SerialReader.h"
+
 using namespace Leap;
 
 class CLeapHmdLatest;
@@ -72,6 +76,16 @@ private:
     // Leap Motion's Controller object
     Controller *m_Controller;
 
+	// Custom controller objects
+private:
+	CustomController::ControllerData *controllerData;
+	SocketReaderPlugin::SerialReader *serialReader;
+	SocketReaderPlugin::UdpSocket *udpReader;
+public:
+	void InitializeSerialReader();
+	void InitializeUdpReader();
+	
+
     // a mutex for thread safety (Leap::Listener callbacks arrive from different threads)
 //    std::recursive_mutex m_Mutex;
 //    typedef std::lock_guard<std::recursive_mutex> scope_lock;
@@ -122,7 +136,7 @@ public:
 
     bool IsActivated() const;
     bool HasControllerId( int nBase, int nId );
-    bool Update(Frame &frame);
+    bool Update(Frame &frame, CustomController::ControllerData* controllerData);
     const char *GetSerialNumber();
 
     static void RealignCoordinates( CLeapHmdLatest * pLeapA, CLeapHmdLatest * pLeapB );
@@ -137,8 +151,8 @@ private:
     typedef void ( vr::IServerDriverHost::*ButtonUpdate )( uint32_t unWhichDevice, vr::EVRButtonId eButtonId, double eventTimeOffset );
 
     void SendButtonUpdates( ButtonUpdate ButtonEvent, uint64_t ulMask );
-    void UpdateControllerState(Frame &frame);
-    void UpdateTrackingState(Frame &frame);
+    void UpdateControllerState(Frame &frame, CustomController::ControllerData* controllerData);
+    void UpdateTrackingState(Frame &frame, CustomController::ControllerData* controllerData);
 
     // Handle for calling back into vrserver with events and updates
     vr::IServerDriverHost *m_pDriverHost;

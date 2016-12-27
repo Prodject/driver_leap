@@ -69,6 +69,8 @@ public:
     bool MatchGestures(const Frame &frame, WhichHand which, float (&result)[NUM_GESTURES],
                        Vector right = RightVector, Vector in = InVector, Vector up = UpVector);
 
+	bool HandFound(const Frame &frame, WhichHand which);
+
     /**
      * Map the GestureType enum to a string name.
      */

@@ -5,18 +5,39 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tga;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="CustomController">
+      <UniqueIdentifier>{9e3077f9-21f3-4c70-8ced-ac61578bc189}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="driver_leap.cpp" />
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="GestureMatcher.cpp" />
+    <ClCompile Include="ControllerData.cpp">
+      <Filter>CustomController</Filter>
+    </ClCompile>
+    <ClCompile Include="SocketReaderPlugin.cpp">
+      <Filter>CustomController</Filter>
+    </ClCompile>
+    <ClCompile Include="SerialReader.cpp">
+      <Filter>CustomController</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="driver_leap.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="GestureMatcher.h" />
+    <ClInclude Include="ControllerData.h">
+      <Filter>CustomController</Filter>
+    </ClInclude>
+    <ClInclude Include="SocketReaderPlugin.h">
+      <Filter>CustomController</Filter>
+    </ClInclude>
+    <ClInclude Include="SerialReader.h">
+      <Filter>CustomController</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\README.md">
