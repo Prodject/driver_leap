@@ -400,12 +400,15 @@ vr::EVRInitError CServerDriver_Leap::Init( vr::IDriverLog * pDriverLog, vr::ISer
 
     m_Controller->addListener(*this);
 
+	// m_pDriverHost->GetSettings(vr::IVRSettings_Version);
 	vr::IVRSettings *settings = m_pDriverHost->GetSettings(vr::IVRSettings_Version);
 	bool useUdp = settings->GetBool("combinedLeap", "useUdpController", true);
 	bool useSerial = settings->GetBool("combinedLeap", "useSerialController", true);
+	useDeviceRotation = settings->GetBool("combinedLeap", "useDeviceRotation", true);
 
-
+	DriverLog("Custom controller settings read: UDP: %s, Serial: %s", useUdp ? "true" : "false", useSerial ? "true" : "false");
 	controllerData = new CustomController::ControllerData;
+	controllerData->useControllerOrientation = useDeviceRotation;
 	if (useSerial)
 	{
 		serialReader = new SocketReaderPlugin::SerialReader;
@@ -414,6 +417,7 @@ vr::EVRInitError CServerDriver_Leap::Init( vr::IDriverLog * pDriverLog, vr::ISer
 	if (useUdp)
 	{
 		udpReader = new SocketReaderPlugin::UdpSocket;
+		InitializeUdpReader();
 	}
 
     return vr::VRInitError_None;
@@ -447,6 +451,8 @@ void CServerDriver_Leap::Cleanup()
 
 	if (serialReader)
 	{
+		udpReader->Close();
+		udpReaderThread.join();
 		delete serialReader;
 		serialReader = NULL;
 	}
@@ -595,6 +601,30 @@ void CServerDriver_Leap::LaunchLeapMonitor( const char * pchDriverInstallDir )
 #endif
 }
 
+void CServerDriver_Leap::InitializeUdpReader()
+{
+	DriverLog("Start UDP reader initialization");
+	udpReaderThread = std::thread(ReadFromUdpLoop, controllerData, udpReader);
+}
+
+void CServerDriver_Leap::ReadFromUdpLoop(CustomController::ControllerData * controllerData, SocketReaderPlugin::UdpSocket * socket)
+{
+	socket->Init();
+	socket->Open();
+	//TODO: check if the socket is open
+	DriverLog("UDP reader initialized");
+
+	//TODO: optimize data allocation
+	char* data;
+	//TODO: real loop condition
+	while (true)
+	{
+		data = socket->ReadFromSocket();
+		//TODO: mutex
+		controllerData->ParseStringUdp(data);
+	}
+}
+
 /** Launch leap_monitor if needed (requested by devices as they activate) */
 void CServerDriver_Leap::LaunchLeapMonitor()
 {
@@ -710,8 +740,6 @@ vr::EVRInitError CLeapHmdLatest::Activate( uint32_t unObjectId )
     m_unSteamVRTrackedDeviceId = unObjectId;
 
     g_ServerTrackedDeviceProvider.LaunchLeapMonitor();
-
-	
 
     return vr::VRInitError_None;
 }
@@ -1216,6 +1244,9 @@ void CLeapHmdLatest::UpdateTrackingState(Frame &frame, CustomController::Control
             m_Pose.qDriverFromHeadRotation.x = 0; //  -m_hmdRot.x;   this would cancel out the HMD's rotation
             m_Pose.qDriverFromHeadRotation.y = 0; //  -m_hmdRot.y;   but instead we rely on the Leap Motion to
             m_Pose.qDriverFromHeadRotation.z = 0; //  -m_hmdRot.z;   update the hand rotation as the head rotates
+
+			//m_Pose.qDriverFromHeadRotation = controllerData->state.hmdCorrectionQuat;
+
             m_Pose.vecDriverFromHeadTranslation[0] = 0;
             m_Pose.vecDriverFromHeadTranslation[1] = 0;
             m_Pose.vecDriverFromHeadTranslation[2] = 0;
@@ -1243,22 +1274,6 @@ void CLeapHmdLatest::UpdateTrackingState(Frame &frame, CustomController::Control
             Vector normal = hand.palmNormal(); normal /= normal.magnitude();
             Vector side = direction.cross(normal);
 
-#if 0
-            // This code assumes palms are facing downwards.
-
-            // NOTE: y and z are swapped with respect to the Leap Motion's coordinate system and I list
-            //       the vectors in the order in which I expect them to be in the tracking camera's
-            //       coordinates system: X = sideways,
-            //                           Y = up/down i.e. palm's normal vector
-            //                           Z = front/back i.e. hand's pointing direction
-            m_Pose.qRotation = CalculateRotation(R);
-
-            float R[3][3] =
-            { { side.x,      side.z,      side.y },
-            { normal.x,    normal.z,    normal.y },
-            { direction.x, direction.z, direction.y } };
-
-#else
             // This code assumes palms are facing inwards as if you were holding controllers.
             // This is why the left hand and the
             // right hands have to use different matrices to compute their rotations.
@@ -1273,13 +1288,22 @@ void CLeapHmdLatest::UpdateTrackingState(Frame &frame, CustomController::Control
               {-side.x,     -side.z,     -side.y      },
               { direction.x, direction.z, direction.y } };
 
-            // now turn this into a Quaternion and we're done.
-            if (m_nId == LEFT_CONTROLLER)
-                m_Pose.qRotation = CalculateRotation(L);
-            else if (m_nId == RIGHT_CONTROLLER)
-                m_Pose.qRotation = CalculateRotation(R);
+			if (controllerData->useControllerOrientation)
+			{
+				//TODO: if statement, don't just overwrite existing
+				m_Pose.qRotation = controllerData->GetOrientationQuaternion();
+				m_hmdRot.w *= -1.0f;
+				m_Pose.qRotation = m_Pose.qRotation * m_hmdRot;
+			}
+			else
+			{
+				// now turn this into a Quaternion and we're done
+				if (m_nId == LEFT_CONTROLLER)
+					m_Pose.qRotation = CalculateRotation(L);
+				else if (m_nId == RIGHT_CONTROLLER)
+					m_Pose.qRotation = CalculateRotation(R);
+			}
 
-#endif
             // rotate by the specified grip angle (may be useful when using the Vive as a gun grip)
             if (m_gripAngleOffset != 0)
                 m_Pose.qRotation = rotate_around_axis(Vector(1.0, 0.0, 0.0), m_gripAngleOffset) * m_Pose.qRotation;

@@ -5,13 +5,17 @@
 #include <vector>
 #include <math.h>
 #include <stdlib.h>
+#include "openvr_driver.h"
 
 
 namespace CustomController
 {
+#define DEGREE_TO_RADIAN 0.0174532925
 #define MAX_CONTROLLER_STRING_ELEMENTS 13
 #define TIMESTAMP_TAG "TMST"
 #define FUSED_ORIENTATION_TAG "FO"
+#define FUSED_QUATERNION_TAG "FQ"
+#define HMD_CORRECTION_QUAT_TAG "HMDC"
 #define BUTTON_TAG "BTN"
 #define TRACKPAD_TAG "TRK"
 #define END_TAG "END"
@@ -40,7 +44,7 @@ namespace CustomController
 		bool btn_grip = false;
 		bool trackpad_touched = false;
 		Vector3 orientation;
-
+		vr::HmdQuaternion_t orientationQuat;
 		void PrintToConsole();
 	};
 
@@ -48,11 +52,14 @@ namespace CustomController
 	{
 	public:
 		struct ButtonStates state;
+		bool useControllerOrientation;
 
 	public:
 		ControllerData();
 		~ControllerData();
 		ButtonStates ParseStringSerial(char * serialString);
 		ButtonStates ParseStringUdp(std::string packetString);
+		vr::HmdQuaternion_t GetOrientationQuaternion();
+
 	};
 }

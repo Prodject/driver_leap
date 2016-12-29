@@ -16,6 +16,7 @@
 #include "ControllerData.h"
 #include "SocketReaderPlugin.h"
 #include "SerialReader.h"
+#include <thread>
 
 using namespace Leap;
 
@@ -76,14 +77,20 @@ private:
     // Leap Motion's Controller object
     Controller *m_Controller;
 
-	// Custom controller objects
+	// Custom controller fields
 private:
 	CustomController::ControllerData *controllerData;
 	SocketReaderPlugin::SerialReader *serialReader;
 	SocketReaderPlugin::UdpSocket *udpReader;
+	std::thread udpReaderThread;
+	bool useDeviceRotation;
+	// Custom controller functions
 public:
 	void InitializeSerialReader();
 	void InitializeUdpReader();
+private:
+	static void ReadFromUdpLoop(CustomController::ControllerData *controllerData, SocketReaderPlugin::UdpSocket *socket);
+
 	
 
     // a mutex for thread safety (Leap::Listener callbacks arrive from different threads)

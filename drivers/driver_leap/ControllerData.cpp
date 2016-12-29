@@ -6,6 +6,7 @@ namespace CustomController
 
 	ControllerData::ControllerData()
 	{
+		useControllerOrientation = false;
 	}
 
 
@@ -67,6 +68,30 @@ namespace CustomController
 				state.orientation.z = stof(parsed[i]);
 
 			}
+			else if (parsed[i] == FUSED_QUATERNION_TAG)
+			{
+				i++;
+				state.orientationQuat.w = stof(parsed[i]);
+				i++;
+				state.orientationQuat.x = stof(parsed[i]);
+				i++;
+				state.orientationQuat.y = stof(parsed[i]);
+				i++;
+				state.orientationQuat.z = stof(parsed[i]);
+
+			}
+			else if (parsed[i] == HMD_CORRECTION_QUAT_TAG)
+			{
+				i++;
+				//state.hmdCorrectionQuat.w = stof(parsed[i]);
+				i++;
+				//state.hmdCorrectionQuat.x = stof(parsed[i]);
+				i++;
+				//state.hmdCorrectionQuat.y = stof(parsed[i]);
+				i++;
+				//state.hmdCorrectionQuat.z = stof(parsed[i]);
+
+			}
 			else if (parsed[i] == BUTTON_TAG)
 			{
 				i++;
@@ -84,7 +109,7 @@ namespace CustomController
 				i++;
 				state.touchpadX = stof(parsed[i]);
 				i++;
-				state.touchpadY = stof(parsed[i]);
+				state.touchpadY = -stof(parsed[i]);
 			}
 			else if (parsed[i] == END_TAG)
 			{
@@ -96,6 +121,15 @@ namespace CustomController
 			}
 		}
 		return state;
+	}
+
+	vr::HmdQuaternion_t ControllerData::GetOrientationQuaternion()
+	{
+		//state.orientationQuat.w = 1.0f;
+		//state.orientationQuat.x *= -1.0f;
+		//state.orientationQuat.y *= -1.0f;
+		//state.orientationQuat.z *= -1.0f;
+		return state.orientationQuat;
 	}
 
 	void ButtonStates::PrintToConsole()
