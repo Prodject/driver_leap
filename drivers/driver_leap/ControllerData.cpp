@@ -125,10 +125,14 @@ namespace CustomController
 
 	vr::HmdQuaternion_t ControllerData::GetOrientationQuaternion()
 	{
-		//state.orientationQuat.w = 1.0f;
+		//state.orientationQuat.w *= -1.0f;
 		//state.orientationQuat.x *= -1.0f;
 		//state.orientationQuat.y *= -1.0f;
 		//state.orientationQuat.z *= -1.0f;
+		//state.orientationQuat.x *= -1.0f;
+		//float temp = state.orientationQuat.y;
+		//state.orientationQuat.y = state.orientationQuat.z;
+		//state.orientationQuat.z = temp;
 		return state.orientationQuat;
 	}
 

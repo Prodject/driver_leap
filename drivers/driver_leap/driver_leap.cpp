@@ -1290,10 +1290,9 @@ void CLeapHmdLatest::UpdateTrackingState(Frame &frame, CustomController::Control
 
 			if (controllerData->useControllerOrientation)
 			{
-				//TODO: if statement, don't just overwrite existing
 				m_Pose.qRotation = controllerData->GetOrientationQuaternion();
 				m_hmdRot.w *= -1.0f;
-				m_Pose.qRotation = m_Pose.qRotation * m_hmdRot;
+				m_Pose.qRotation = m_Pose.qRotation * m_hmdRot; //TODO: normalize the result
 			}
 			else
 			{
