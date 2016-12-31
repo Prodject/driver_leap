@@ -49,11 +49,13 @@ namespace CustomController
 		vr::HmdQuaternion_t centerQuaternion;
 		void PrintToConsole();
 		void ResetCenter();
-		void SetCurrentAsCenter();
+		void SetAsCenter(vr::HmdQuaternion_t hmdRot);
 	};
 
 	class ControllerData
 	{
+	private:
+		vr::HmdQuaternion_t currentHmdRotation;
 	public:
 		ButtonStates rightState;
 		ButtonStates leftState;
@@ -70,5 +72,6 @@ namespace CustomController
 		vr::HmdQuaternion_t GetRightOrientation();
 		vr::HmdQuaternion_t* normalizeQauternion(vr::HmdQuaternion_t* quat);
 		vr::HmdQuaternion_t ControllerData::rotate_around_axis(float angleX, float angleY, float angleZ, const float &a);
+		void SetCurrentHMDOrientation(vr::HmdQuaternion_t hmdRot);
 	};
 }

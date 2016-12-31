@@ -1206,6 +1206,9 @@ static vr::HmdQuaternion_t CalculateRotation(float(*a)[3]) {
 
 void CLeapHmdLatest::UpdateTrackingState(Frame &frame, CustomController::ControllerData* controllerData)
 {
+	// Update the hmd orientation in the controller data. Used to set the center orientation for the controller.
+	controllerData->SetCurrentHMDOrientation(m_hmdRot);
+
     HandList &hands = frame.hands();
 
     bool handFound = false;
@@ -1314,7 +1317,7 @@ void CLeapHmdLatest::UpdateTrackingState(Frame &frame, CustomController::Control
 					m_Pose.qRotation = controllerData->GetLeftOrientation();
 				}
 				m_hmdRot.w *= -1.0f;
-				m_Pose.qRotation = m_Pose.qRotation * m_hmdRot; //TODO: normalize the result
+				m_Pose.qRotation = m_Pose.qRotation * m_hmdRot;
 			}
 			else
 			{

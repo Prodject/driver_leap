@@ -28,6 +28,10 @@ namespace CustomController
 		useControllerOrientation = false;
 		leftState.ResetCenter();
 		rightState.ResetCenter();
+		currentHmdRotation.w = 1.0f;
+		currentHmdRotation.x = 0.0f;
+		currentHmdRotation.y = 0.0f;
+		currentHmdRotation.z = 0.0f;
 	}
 
 	ControllerData::~ControllerData()
@@ -136,7 +140,7 @@ namespace CustomController
 				bool reset = stoi(parsed[i]) == 1;
 				if (reset)
 				{
-					targetState->SetCurrentAsCenter();
+					targetState->SetAsCenter(currentHmdRotation);
 				}
 			}
 			else if (parsed[i] == HMD_CORRECTION_QUAT_TAG)
@@ -188,7 +192,7 @@ namespace CustomController
 		//vr::HmdQuaternion_t temp = leftState.orientationQuat * leftState.centerQuaternion;
 		//normalizeQauternion(&temp);
 		//return temp;
-		return leftState.orientationQuat;
+		return leftState.orientationQuat * leftState.centerQuaternion;
 	}
 
 	vr::HmdQuaternion_t ControllerData::GetRightOrientation()
@@ -202,7 +206,7 @@ namespace CustomController
 		//temp.w = temp.w * -1.0f;
 		//temp = temp * rightState.centerQuaternion;
 		//return temp;
-		return rightState.orientationQuat;
+		return rightState.orientationQuat * rightState.centerQuaternion;
 	}
 
 	vr::HmdQuaternion_t* ControllerData::normalizeQauternion(vr::HmdQuaternion_t * quat)
@@ -235,17 +239,22 @@ namespace CustomController
 		centerQuaternion.z = 0.0f;
 	}
 
-	void ButtonStates::SetCurrentAsCenter()
+	void ButtonStates::SetAsCenter(vr::HmdQuaternion_t hmdRot)
 	{
-		//centerQuaternion = orientationQuat;
-		//double d = centerQuaternion.w * centerQuaternion.w + centerQuaternion.x * centerQuaternion.x
-		//	+ centerQuaternion.y * centerQuaternion.y + centerQuaternion.z * centerQuaternion.z;
-		//centerQuaternion.w = (-1.0f * centerQuaternion.w) / d;
-		//centerQuaternion.x = (-1.0f * centerQuaternion.x) / d;
-		//centerQuaternion.y = (-1.0f * centerQuaternion.y) / d;
-		//centerQuaternion.z = (-1.0f * centerQuaternion.z) / d;
+		centerQuaternion = hmdRot;
+		double d = centerQuaternion.w * centerQuaternion.w + centerQuaternion.x * centerQuaternion.x
+			+ centerQuaternion.y * centerQuaternion.y + centerQuaternion.z * centerQuaternion.z;
+		centerQuaternion.w = (-1.0f * centerQuaternion.w) / d;
+		centerQuaternion.x = (-1.0f * centerQuaternion.x) / d;
+		centerQuaternion.y = (-1.0f * centerQuaternion.y) / d;
+		centerQuaternion.z = (-1.0f * centerQuaternion.z) / d;
 
 		//centerQuaternion.w = centerQuaternion.w * -1.0f;
+	}
+
+	void ControllerData::SetCurrentHMDOrientation(vr::HmdQuaternion_t hmdRot)
+	{
+		currentHmdRotation = hmdRot;
 	}
 
 	std::string Vector3::ToString()
