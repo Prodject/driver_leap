@@ -405,10 +405,15 @@ vr::EVRInitError CServerDriver_Leap::Init( vr::IDriverLog * pDriverLog, vr::ISer
 	bool useUdp = settings->GetBool("combinedLeap", "useUdpController", true);
 	bool useSerial = settings->GetBool("combinedLeap", "useSerialController", true);
 	useDeviceRotation = settings->GetBool("combinedLeap", "useDeviceRotation", true);
+	useLeftHandOrientation = settings->GetBool("combinedLeap", "useLeftController", false);
+	useRightHandController = settings->GetBool("combinedLeap", "useRightController", true);
 
 	DriverLog("Custom controller settings read: UDP: %s, Serial: %s", useUdp ? "true" : "false", useSerial ? "true" : "false");
 	controllerData = new CustomController::ControllerData;
 	controllerData->useControllerOrientation = useDeviceRotation;
+	controllerData->useLeftControllerOrientation = useLeftHandOrientation;
+	controllerData->useRightControllerOrientation = useRightHandController;
+
 	if (useSerial)
 	{
 		serialReader = new SocketReaderPlugin::SerialReader;
@@ -969,6 +974,13 @@ void CLeapHmdLatest::UpdateControllerState(Frame &frame, CustomController::Contr
                                       GestureMatcher::AnyHand;
 
 	handFound = matcher.HandFound(frame, which);
+	CustomController::ButtonStates* targetState;
+	if (m_nId == RIGHT_CONTROLLER)
+		targetState = &(controllerData->rightState);
+	else if (m_nId == LEFT_CONTROLLER)
+		targetState = &(controllerData->leftState);
+	else
+		return;
 
 #pragma region Original
 //	float scores[GestureMatcher::NUM_GESTURES];
@@ -1046,38 +1058,39 @@ void CLeapHmdLatest::UpdateControllerState(Frame &frame, CustomController::Contr
 #pragma endregion
 
 #pragma region Custom controller button input
+	if (handFound)
 	{
 		// Read controller data
 		NewState.unPacketNum = m_ControllerState.unPacketNum + 1;
 
 		// Menu button
-		if (controllerData->state.btn_menu)
+		if (targetState->btn_menu)
 		{
 			NewState.ulButtonPressed |= vr::ButtonMaskFromId(vr::k_EButton_ApplicationMenu);
 		}
 		// Grip button
-		if (controllerData->state.btn_grip)
+		if (targetState->btn_grip)
 		{
 			NewState.ulButtonPressed |= vr::ButtonMaskFromId(vr::k_EButton_Grip);
 		}
 		// System button
-		if (controllerData->state.btn_system)
+		if (targetState->btn_system)
 		{
 			NewState.ulButtonPressed |= vr::ButtonMaskFromId(vr::k_EButton_System);
 		}
 		// Trigger
-		if (controllerData->state.btn_trigger)
+		if (targetState->btn_trigger)
 		{
 			NewState.ulButtonPressed |= vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger);
 		}
 		// Touchpad pressed
-		if (controllerData->state.btn_touchpadPress)
+		if (targetState->btn_touchpadPress)
 		{
 			NewState.ulButtonPressed |= vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Touchpad);
 		}
 
 		// Touchpad touched
-		if (controllerData->state.trackpad_touched)
+		if (targetState->trackpad_touched)
 		{
 			NewState.ulButtonTouched |= vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Touchpad);
 		}
@@ -1095,11 +1108,11 @@ void CLeapHmdLatest::UpdateControllerState(Frame &frame, CustomController::Contr
 		SendButtonUpdates(&vr::IServerDriverHost::TrackedDeviceButtonUntouched, ulChangedTouched & ~NewState.ulButtonTouched);
 
 		// Touchpad touch point
-		NewState.rAxis[0].x = controllerData->state.touchpadX;
-		NewState.rAxis[0].y = controllerData->state.touchpadY;
+		NewState.rAxis[0].x = targetState->touchpadX;
+		NewState.rAxis[0].y = targetState->touchpadY;
 
 		// Trigger axis
-		NewState.rAxis[1].x = controllerData->state.btn_trigger ? 1.0 : 0.0;
+		NewState.rAxis[1].x = targetState->btn_trigger ? 1.0 : 0.0;
 		NewState.rAxis[1].y = 0.0;
 
 		// Axis change updates
@@ -1288,9 +1301,18 @@ void CLeapHmdLatest::UpdateTrackingState(Frame &frame, CustomController::Control
               {-side.x,     -side.z,     -side.y      },
               { direction.x, direction.z, direction.y } };
 
-			if (controllerData->useControllerOrientation)
+			if (controllerData->useControllerOrientation &&
+				((m_nId == LEFT_CONTROLLER && controllerData->useLeftControllerOrientation ||
+					m_nId == RIGHT_CONTROLLER && controllerData->useRightControllerOrientation)))
 			{
-				m_Pose.qRotation = controllerData->GetOrientationQuaternion();
+				if (m_nId == RIGHT_CONTROLLER)
+				{
+					m_Pose.qRotation = controllerData->GetRightOrientation();
+				}
+				else if (m_nId == LEFT_CONTROLLER)
+				{
+					m_Pose.qRotation = controllerData->GetLeftOrientation();
+				}
 				m_hmdRot.w *= -1.0f;
 				m_Pose.qRotation = m_Pose.qRotation * m_hmdRot; //TODO: normalize the result
 			}

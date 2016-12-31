@@ -84,6 +84,8 @@ private:
 	SocketReaderPlugin::UdpSocket *udpReader;
 	std::thread udpReaderThread;
 	bool useDeviceRotation;
+	bool useLeftHandOrientation;
+	bool useRightHandController;
 	// Custom controller functions
 public:
 	void InitializeSerialReader();

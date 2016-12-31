@@ -15,6 +15,7 @@ namespace CustomController
 #define TIMESTAMP_TAG "TMST"
 #define FUSED_ORIENTATION_TAG "FO"
 #define FUSED_QUATERNION_TAG "FQ"
+#define setCenter_TAG "SCT"
 #define HMD_CORRECTION_QUAT_TAG "HMDC"
 #define BUTTON_TAG "BTN"
 #define TRACKPAD_TAG "TRK"
@@ -43,23 +44,31 @@ namespace CustomController
 		bool btn_system = false;
 		bool btn_grip = false;
 		bool trackpad_touched = false;
-		Vector3 orientation;
+		Vector3 orientation; //TODO: remove the euler orientation.
 		vr::HmdQuaternion_t orientationQuat;
+		vr::HmdQuaternion_t centerQuaternion;
 		void PrintToConsole();
+		void ResetCenter();
+		void SetCurrentAsCenter();
 	};
 
 	class ControllerData
 	{
 	public:
-		struct ButtonStates state;
+		ButtonStates rightState;
+		ButtonStates leftState;
 		bool useControllerOrientation;
+		bool useLeftControllerOrientation;
+		bool useRightControllerOrientation;
 
 	public:
 		ControllerData();
 		~ControllerData();
-		ButtonStates ParseStringSerial(char * serialString);
-		ButtonStates ParseStringUdp(std::string packetString);
-		vr::HmdQuaternion_t GetOrientationQuaternion();
-
+		void ParseStringSerial(char * serialString);
+		void ParseStringUdp(std::string packetString);
+		vr::HmdQuaternion_t GetLeftOrientation();
+		vr::HmdQuaternion_t GetRightOrientation();
+		vr::HmdQuaternion_t* normalizeQauternion(vr::HmdQuaternion_t* quat);
+		vr::HmdQuaternion_t ControllerData::rotate_around_axis(float angleX, float angleY, float angleZ, const float &a);
 	};
 }
