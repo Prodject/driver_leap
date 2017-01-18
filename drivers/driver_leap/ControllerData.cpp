@@ -52,6 +52,8 @@ namespace CustomController
 
 	void ControllerData::ParseStringSerial(char* serialString)
 	{
+		ButtonStates* targetState = &rightState; //TODO: read target hand from the serial data
+
 		stringstream sStream;
 		sStream.str(serialString);
 		string item;
@@ -63,14 +65,32 @@ namespace CustomController
 			i++;
 		}
 
+		return;
+
+		// Buttons
 		int buttonState = stoi(parsed[0]);
-		rightState.btn_trigger = (buttonState & 16) > 0;
-		rightState.btn_touchpadPress = (buttonState & 8) > 0;
-		rightState.btn_menu = (buttonState & 4) > 0;
-		rightState.btn_system = (buttonState & 2) > 0;
-		rightState.btn_grip = (buttonState & 1) > 0;
-		rightState.touchpadX = stof(parsed[1]);
-		rightState.touchpadY = stof(parsed[2]);
+		if ((buttonState & 32) > 0)
+		{
+			// Reset button
+			targetState->SetAsCenter(currentHmdRotation);
+		}
+		targetState->btn_trigger = (buttonState & 16) > 0;
+		targetState->btn_touchpadPress = (buttonState & 8) > 0;
+		targetState->btn_menu = (buttonState & 4) > 0;
+		targetState->btn_system = (buttonState & 2) > 0;
+		targetState->btn_grip = (buttonState & 1) > 0;
+
+		// Touchpad
+		targetState->touchpadX = stof(parsed[1]);
+		targetState->touchpadY = stof(parsed[2]);
+
+		// Orientation
+		//TODO: real values
+		targetState->orientationQuat = vr::HmdQuaternion_t();
+		targetState->orientationQuat.w = 1.0f;
+		targetState->orientationQuat.x = 0.0f;
+		targetState->orientationQuat.y = 0.0f;
+		targetState->orientationQuat.z = 0.0f;
 	}
 
 	void ControllerData::ParseStringUdp(string packetString)

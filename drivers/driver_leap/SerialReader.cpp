@@ -38,7 +38,7 @@ namespace SocketReaderPlugin
 			else
 			{
 				// Define serial connection parameters
-				dcbSerialParams.BaudRate = CBR_9600;
+				dcbSerialParams.BaudRate = CBR_115200; //TODO: read baud rate from vr settings
 				dcbSerialParams.ByteSize = 8;
 				dcbSerialParams.StopBits = ONESTOPBIT;
 				dcbSerialParams.Parity = NOPARITY;
@@ -66,7 +66,7 @@ namespace SocketReaderPlugin
 		}
 	}
 
-	int SerialReader::ReadData(char *buffer, unsigned int nbChar)
+	int SerialReader::ReadData(char *buffer, unsigned int dataLength)
 	{
 		//Number of bytes we'll have read
 		DWORD bytesRead;
@@ -82,9 +82,9 @@ namespace SocketReaderPlugin
 			//If there is we check if there is enough data to read the required number
 			//of characters, if not we'll read only the available characters to prevent
 			//locking of the application.
-			if (this->status.cbInQue>nbChar)
+			if (this->status.cbInQue>dataLength)
 			{
-				toRead = nbChar;
+				toRead = dataLength;
 			}
 			else
 			{

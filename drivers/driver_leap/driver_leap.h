@@ -83,6 +83,7 @@ private:
 	SocketReaderPlugin::SerialReader *serialReader;
 	SocketReaderPlugin::UdpSocket *udpReader;
 	std::thread udpReaderThread;
+	std::thread serialReaderThread;
 	bool useDeviceRotation;
 	bool useLeftHandOrientation;
 	bool useRightHandController;
@@ -92,7 +93,7 @@ public:
 	void InitializeUdpReader();
 private:
 	static void ReadFromUdpLoop(CustomController::ControllerData *controllerData, SocketReaderPlugin::UdpSocket *socket);
-
+	static void ReadFromSerialLoop(CustomController::ControllerData *controllerData, SocketReaderPlugin::SerialReader *serialReader);
 	
 
     // a mutex for thread safety (Leap::Listener callbacks arrive from different threads)

@@ -101,6 +101,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <GenerateManifest>false</GenerateManifest>
     <IgnoreImportLibrary>false</IgnoreImportLibrary>
+    <LibraryPath>D:\Users\Peter\Documents\SDK\LeapSDK\lib\x64;$(LibraryPath)</LibraryPath>
+    <IncludePath>D:\Users\Peter\Documents\SDK\LeapSDK\include;D:\Users\Peter\Documents\Repos\openvr\headers;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -228,7 +230,7 @@ xcopy /s /i /y "$(SolutionDir)\resources" "$(InstallDir)\resources"</Command>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
       <GenerateWindowsMetadata>false</GenerateWindowsMetadata>
       <AdditionalLibraryDirectories>$(LeapSDKDir)\lib\x64;$(OpenVRDir)\lib\win64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Leap.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Leap.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <CustomBuildStep>
       <Message />
