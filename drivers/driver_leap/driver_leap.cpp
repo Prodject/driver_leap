@@ -445,7 +445,6 @@ void CServerDriver_Leap::Cleanup()
     if (m_Controller)
     {
         m_Controller->removeListener(*this);
-        delete m_Controller;
         m_Controller = NULL;
     }
 
@@ -643,29 +642,60 @@ void CServerDriver_Leap::ReadFromSerialLoop(CustomController::ControllerData * c
 	serialReader->Init("\\\\.\\COM12"); //TODO: read COM port from settings
 	//TODO: proper buffer management
 	const int dataLength = 256;
-	char readBuffer[dataLength + 1] = ""; // Dafuq?
+	char readBuffer[dataLength + 1];
+	char secondaryBuffer[500];
+	int secBufferLength = 0;
+	bool buffered = false;
+	readBuffer[dataLength] = '\0';
 	int bytesRead = 0;
+	int startIndex;
+	int endIndex;
 
 	while (serialReader->isConnected())
 	{
 		//TODO: make a proper read buffer
-		 bytesRead = serialReader->ReadData(readBuffer, dataLength);
-		 if (bytesRead > 0)
-		 {
-			 // Close the read string.
-			 readBuffer[bytesRead] = '\0';
-			 // Search for the leading string marker.
-			 if (readBuffer[0] == '#')
-			 {
-				 // String message found, write it to log.
-				 DriverLog("Serial device log: {0}", readBuffer);
-			 }
-			 else
-			 {
-				 // Data found, process it.
-				 controllerData->ParseStringSerial(readBuffer);
-			 }
-		 }
+		bytesRead = serialReader->ReadData(readBuffer, dataLength);
+		if (bytesRead > 0)
+		{
+			if (SocketReaderPlugin::SerialReader::FindWholeMessage(readBuffer, bytesRead, &startIndex, &endIndex))
+			{
+				// Full message read, process it, and clear the buffer
+				readBuffer[endIndex] = '\0';
+				controllerData->ParseStringSerial(readBuffer + startIndex + 1);
+				//printf("Message: %s\n", readBuffer + startIndex);
+				buffered = false;
+				secBufferLength = 0;
+			}
+			else
+			{
+				// Partial message, buffer it.
+				if (buffered)
+				{
+					// Concatenate the read data with the buffer.
+					memcpy(secondaryBuffer + secBufferLength, readBuffer, bytesRead * sizeof(char));
+					secBufferLength += bytesRead;
+
+					if (SocketReaderPlugin::SerialReader::FindWholeMessage(secondaryBuffer, secBufferLength, &startIndex, &endIndex))
+					{
+						// Full message, clear the buffer
+						secondaryBuffer[endIndex] = '\0';
+						controllerData->ParseStringSerial(secondaryBuffer + startIndex + 1);
+						//printf("Message: %s\n", secondaryBuffer + startIndex);
+						buffered = false;
+						secBufferLength = 0;
+					}
+					// Partial message, leave it in the buffer
+				}
+				else
+				{
+					// Copy this read to the buffer.
+					memcpy(secondaryBuffer, readBuffer, bytesRead * sizeof(char));
+					secBufferLength = bytesRead;
+					buffered = true;
+				}
+			}
+		}
+
 		 Sleep(5); //TODO: Read this from settings.
 	}
 }

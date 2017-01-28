@@ -117,4 +117,30 @@ namespace SocketReaderPlugin
 	{
 		return connected;
 	}
+
+	bool SerialReader::FindWholeMessage(char * data, int length, int * startIndex, int * endIndex)
+	{
+		bool firstFound = false;
+		for (int i = length - 1; i >= 0; i--)
+		{
+			if (data[i] == MESSAGE_SEPARATOR)
+			{
+				if (firstFound)
+				{
+					*startIndex = i;
+					// Safety check to prevent false triggers caused by duplications.
+					if (*endIndex - *startIndex <= 1)
+						return false;
+
+					return true;
+				}
+				else
+				{
+					firstFound = true;
+					*endIndex = i;
+				}
+			}
+		}
+		return false;
+	}
 }

@@ -52,7 +52,7 @@ namespace CustomController
 
 	void ControllerData::ParseStringSerial(char* serialString)
 	{
-		ButtonStates* targetState = &rightState; //TODO: read target hand from the serial data
+		ButtonStates* targetState; //TODO: read target hand from the serial data
 
 		stringstream sStream;
 		sStream.str(serialString);
@@ -65,10 +65,23 @@ namespace CustomController
 			i++;
 		}
 
-		return;
+		// Identify the hand for the controller.
+		if (parsed[0] == "L")
+		{
+			targetState = &leftState;
+		}
+		else if (parsed[0] == "R")
+		{
+			targetState = &rightState;
+		}
+		else
+		{
+			// Wrong packet format
+			return;
+		}
 
 		// Buttons
-		int buttonState = stoi(parsed[0]);
+		int buttonState = stoi(parsed[1]);
 		if ((buttonState & 32) > 0)
 		{
 			// Reset button
@@ -81,8 +94,9 @@ namespace CustomController
 		targetState->btn_grip = (buttonState & 1) > 0;
 
 		// Touchpad
-		targetState->touchpadX = stof(parsed[1]);
-		targetState->touchpadY = stof(parsed[2]);
+		targetState->touchpadX = stof(parsed[2]);
+		targetState->touchpadY = stof(parsed[3]);
+		targetState->trackpad_touched = targetState->touchpadX != 0.f || targetState->touchpadY != 0.f;
 
 		// Orientation
 		//TODO: real values
