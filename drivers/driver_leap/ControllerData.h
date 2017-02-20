@@ -6,6 +6,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include "openvr_driver.h"
+#include "madgwick_algorithm_c\MahonyAHRS\MahonyAHRS.h"
 
 
 namespace CustomController
@@ -47,15 +48,19 @@ namespace CustomController
 		Vector3 orientation; //TODO: remove the euler orientation.
 		vr::HmdQuaternion_t orientationQuat;
 		vr::HmdQuaternion_t centerQuaternion;
+		vr::HmdQuaternion_t zeroQuaternion;
 		void PrintToConsole();
 		void ResetCenter();
+		void ResetZero();
 		void SetAsCenter(vr::HmdQuaternion_t hmdRot);
+		void SetAsZero(vr::HmdQuaternion_t zeroQuat);
 	};
 
 	class ControllerData
 	{
 	private:
 		vr::HmdQuaternion_t currentHmdRotation;
+		vr::HmdQuaternion_t deg90_angleCorrection;
 	public:
 		ButtonStates rightState;
 		ButtonStates leftState;

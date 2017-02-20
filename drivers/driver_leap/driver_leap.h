@@ -87,13 +87,16 @@ private:
 	bool useDeviceRotation;
 	bool useLeftHandOrientation;
 	bool useRightHandController;
+	char hand1ComPort[30];
+	char hand2ComPort[30];
+
 	// Custom controller functions
 public:
-	void InitializeSerialReader();
+	void InitializeSerialReader(char *handOneCOM, char *handTwoCOM);
 	void InitializeUdpReader();
 private:
 	static void ReadFromUdpLoop(CustomController::ControllerData *controllerData, SocketReaderPlugin::UdpSocket *socket);
-	static void ReadFromSerialLoop(CustomController::ControllerData *controllerData, SocketReaderPlugin::SerialReader *serialReader);
+	static void ReadFromSerialLoop(CustomController::ControllerData *controllerData, SocketReaderPlugin::SerialReader *serialReader, char* comPort);
 	
 
     // a mutex for thread safety (Leap::Listener callbacks arrive from different threads)

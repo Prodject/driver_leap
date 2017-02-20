@@ -27,11 +27,14 @@ namespace CustomController
 	{
 		useControllerOrientation = false;
 		leftState.ResetCenter();
+		leftState.ResetZero();
 		rightState.ResetCenter();
+		rightState.ResetZero();
 		currentHmdRotation.w = 1.0f;
 		currentHmdRotation.x = 0.0f;
 		currentHmdRotation.y = 0.0f;
 		currentHmdRotation.z = 0.0f;
+		deg90_angleCorrection = rotate_around_axis(1.0f, 0.0f, 0.0f, 90.0f);
 	}
 
 	ControllerData::~ControllerData()
@@ -52,7 +55,7 @@ namespace CustomController
 
 	void ControllerData::ParseStringSerial(char* serialString)
 	{
-		ButtonStates* targetState; //TODO: read target hand from the serial data
+		ButtonStates* targetState; 
 
 		stringstream sStream;
 		sStream.str(serialString);
@@ -82,11 +85,6 @@ namespace CustomController
 
 		// Buttons
 		int buttonState = stoi(parsed[1]);
-		if ((buttonState & 32) > 0)
-		{
-			// Reset button
-			targetState->SetAsCenter(currentHmdRotation);
-		}
 		targetState->btn_trigger = (buttonState & 16) > 0;
 		targetState->btn_touchpadPress = (buttonState & 8) > 0;
 		targetState->btn_menu = (buttonState & 4) > 0;
@@ -99,12 +97,21 @@ namespace CustomController
 		targetState->trackpad_touched = targetState->touchpadX != 0.f || targetState->touchpadY != 0.f;
 
 		// Orientation
-		//TODO: real values
 		targetState->orientationQuat = vr::HmdQuaternion_t();
-		targetState->orientationQuat.w = 1.0f;
-		targetState->orientationQuat.x = 0.0f;
-		targetState->orientationQuat.y = 0.0f;
-		targetState->orientationQuat.z = 0.0f;
+		targetState->orientationQuat.w = stof(parsed[4]);
+		targetState->orientationQuat.x = stof(parsed[5]);
+		targetState->orientationQuat.y = stof(parsed[6]);
+		targetState->orientationQuat.z = stof(parsed[7]);
+
+		// 90 degree angle correction for the controller
+		targetState->orientationQuat = deg90_angleCorrection * targetState->orientationQuat;
+
+		if ((buttonState & 32) > 0)
+		{
+			// Reset button
+			targetState->SetAsCenter(currentHmdRotation);
+			targetState->SetAsZero(targetState->orientationQuat);
+		}
 	}
 
 	void ControllerData::ParseStringUdp(string packetString)
@@ -164,9 +171,6 @@ namespace CustomController
 				targetState->orientationQuat.y = stof(parsed[i]);
 				i++;
 				targetState->orientationQuat.z = stof(parsed[i]);
-
-				//normalizeQauternion(&(targetState->orientationQuat));
-
 			}
 			else if (parsed[i] == setCenter_TAG)
 			{
@@ -175,20 +179,16 @@ namespace CustomController
 				if (reset)
 				{
 					targetState->SetAsCenter(currentHmdRotation);
+					targetState->ResetZero();
 				}
 			}
 			else if (parsed[i] == HMD_CORRECTION_QUAT_TAG)
 			{
 				//TODO: remove
 				i++;
-				//targetState->hmdCorrectionQuat.w = stof(parsed[i]);
 				i++;
-				//targetState->hmdCorrectionQuat.x = stof(parsed[i]);
 				i++;
-				//targetState->hmdCorrectionQuat.y = stof(parsed[i]);
 				i++;
-				//targetState->hmdCorrectionQuat.z = stof(parsed[i]);
-
 			}
 			else if (parsed[i] == BUTTON_TAG)
 			{
@@ -222,25 +222,12 @@ namespace CustomController
 
 	vr::HmdQuaternion_t ControllerData::GetLeftOrientation()
 	{
-		// TODO: optimize
-		//vr::HmdQuaternion_t temp = leftState.orientationQuat * leftState.centerQuaternion;
-		//normalizeQauternion(&temp);
-		//return temp;
-		return leftState.orientationQuat * leftState.centerQuaternion;
+		return (leftState.orientationQuat * leftState.zeroQuaternion) * leftState.centerQuaternion;
 	}
 
 	vr::HmdQuaternion_t ControllerData::GetRightOrientation()
 	{
-		// TODO: optimize
-		//vr::HmdQuaternion_t temp = rightState.orientationQuat * rightState.centerQuaternion;
-		//vr::HmdQuaternion_t temp = rightState.orientationQuat;
-		//normalizeQauternion(&temp);
-		//auto angleCorrection = rotate_around_axis(1.0f, 0.0f, 0.0f, 90.0f);
-		//temp = angleCorrection * temp;
-		//temp.w = temp.w * -1.0f;
-		//temp = temp * rightState.centerQuaternion;
-		//return temp;
-		return rightState.orientationQuat * rightState.centerQuaternion;
+		return (rightState.orientationQuat * rightState.zeroQuaternion) * rightState.centerQuaternion;
 	}
 
 	vr::HmdQuaternion_t* ControllerData::normalizeQauternion(vr::HmdQuaternion_t * quat)
@@ -273,6 +260,14 @@ namespace CustomController
 		centerQuaternion.z = 0.0f;
 	}
 
+	void ButtonStates::ResetZero()
+	{
+		zeroQuaternion.w = 1.0f;
+		zeroQuaternion.x = 0.0f;
+		zeroQuaternion.y = 0.0f;
+		zeroQuaternion.z = 0.0f;
+	}
+
 	void ButtonStates::SetAsCenter(vr::HmdQuaternion_t hmdRot)
 	{
 		centerQuaternion = hmdRot;
@@ -284,6 +279,19 @@ namespace CustomController
 		centerQuaternion.z = (-1.0f * centerQuaternion.z) / d;
 
 		//centerQuaternion.w = centerQuaternion.w * -1.0f;
+	}
+
+	void ButtonStates::SetAsZero(vr::HmdQuaternion_t zeroQuat)
+	{
+		zeroQuaternion = zeroQuat;
+		double d = zeroQuaternion.w * zeroQuaternion.w + zeroQuaternion.x * zeroQuaternion.x
+			+ zeroQuaternion.y * zeroQuaternion.y + zeroQuaternion.z * zeroQuaternion.z;
+		zeroQuaternion.w = (-1.0f * zeroQuaternion.w) / d;
+		zeroQuaternion.x = (-1.0f * zeroQuaternion.x) / d;
+		zeroQuaternion.y = (-1.0f * zeroQuaternion.y) / d;
+		zeroQuaternion.z = (-1.0f * zeroQuaternion.z) / d;
+
+		zeroQuaternion.w = zeroQuaternion.w * -1.0f;
 	}
 
 	void ControllerData::SetCurrentHMDOrientation(vr::HmdQuaternion_t hmdRot)

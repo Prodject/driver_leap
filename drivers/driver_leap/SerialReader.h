@@ -7,7 +7,6 @@
 
 namespace SocketReaderPlugin
 {
-#define COM_PORT L"COM15"
 #define ARDUINO_WAIT_TIME 2000
 #define MESSAGE_SEPARATOR '|'
 

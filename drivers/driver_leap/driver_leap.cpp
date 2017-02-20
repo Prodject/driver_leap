@@ -407,6 +407,8 @@ vr::EVRInitError CServerDriver_Leap::Init( vr::IDriverLog * pDriverLog, vr::ISer
 	useDeviceRotation = settings->GetBool("combinedLeap", "useDeviceRotation", true);
 	useLeftHandOrientation = settings->GetBool("combinedLeap", "useLeftController", false);
 	useRightHandController = settings->GetBool("combinedLeap", "useRightController", true);
+	settings->GetString("combinedLeap", "comPort1", hand1ComPort, sizeof(hand1ComPort), "");
+	settings->GetString("combinedLeap", "comPort2", hand2ComPort, sizeof(hand2ComPort), "");
 
 	DriverLog("Custom controller settings read: UDP: %s, Serial: %s", useUdp ? "true" : "false", useSerial ? "true" : "false");
 	controllerData = new CustomController::ControllerData;
@@ -417,7 +419,7 @@ vr::EVRInitError CServerDriver_Leap::Init( vr::IDriverLog * pDriverLog, vr::ISer
 	if (useSerial)
 	{
 		serialReader = new SocketReaderPlugin::SerialReader;
-		InitializeSerialReader();
+		InitializeSerialReader(hand1ComPort, hand2ComPort);
 	}
 
 	if (useUdp)
@@ -607,10 +609,10 @@ void CServerDriver_Leap::LaunchLeapMonitor( const char * pchDriverInstallDir )
 #endif
 }
 
-void CServerDriver_Leap::InitializeSerialReader()
+void CServerDriver_Leap::InitializeSerialReader(char *handOneCOM, char *handTwoCOM)
 {
 	DriverLog("Start serial reader initialization");
-	serialReaderThread = std::thread(ReadFromSerialLoop, controllerData, serialReader);
+	serialReaderThread = std::thread(ReadFromSerialLoop, controllerData, serialReader, handOneCOM);
 }
 
 void CServerDriver_Leap::InitializeUdpReader()
@@ -637,13 +639,15 @@ void CServerDriver_Leap::ReadFromUdpLoop(CustomController::ControllerData * cont
 	}
 }
 
-void CServerDriver_Leap::ReadFromSerialLoop(CustomController::ControllerData * controllerData, SocketReaderPlugin::SerialReader * serialReader)
+void CServerDriver_Leap::ReadFromSerialLoop(CustomController::ControllerData * controllerData, SocketReaderPlugin::SerialReader * serialReader, char *comPort)
 {
-	serialReader->Init("\\\\.\\COM12"); //TODO: read COM port from settings
+	//serialReader->Init("\\\\.\\COM12"); //TODO: read COM port from settings
+	serialReader->Init(comPort);
 	//TODO: proper buffer management
 	const int dataLength = 256;
+	const int secBufferMaxSize = 500;
 	char readBuffer[dataLength + 1];
-	char secondaryBuffer[500];
+	char secondaryBuffer[secBufferMaxSize];
 	int secBufferLength = 0;
 	bool buffered = false;
 	readBuffer[dataLength] = '\0';
@@ -671,6 +675,13 @@ void CServerDriver_Leap::ReadFromSerialLoop(CustomController::ControllerData * c
 				// Partial message, buffer it.
 				if (buffered)
 				{
+					if (secBufferLength + bytesRead >= secBufferMaxSize)
+					{
+						// Clear the buffer, if the new message won't fit.
+						buffered = false;
+						secBufferLength = 0;
+					}
+
 					// Concatenate the read data with the buffer.
 					memcpy(secondaryBuffer + secBufferLength, readBuffer, bytesRead * sizeof(char));
 					secBufferLength += bytesRead;
