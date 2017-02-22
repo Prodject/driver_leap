@@ -85,6 +85,7 @@ namespace CustomController
 
 		// Buttons
 		int buttonState = stoi(parsed[1]);
+		targetState->btn_magicMove = (buttonState & 64) > 0;
 		targetState->btn_trigger = (buttonState & 16) > 0;
 		targetState->btn_touchpadPress = (buttonState & 8) > 0;
 		targetState->btn_menu = (buttonState & 4) > 0;
@@ -103,15 +104,15 @@ namespace CustomController
 		targetState->orientationQuat.y = stof(parsed[6]);
 		targetState->orientationQuat.z = stof(parsed[7]);
 
-		// 90 degree angle correction for the controller
-		targetState->orientationQuat = deg90_angleCorrection * targetState->orientationQuat;
-
 		if ((buttonState & 32) > 0)
 		{
 			// Reset button
 			targetState->SetAsCenter(currentHmdRotation);
 			targetState->SetAsZero(targetState->orientationQuat);
 		}
+
+		// 90 degree angle correction for the controller
+		targetState->orientationQuat = deg90_angleCorrection * targetState->orientationQuat;
 	}
 
 	void ControllerData::ParseStringUdp(string packetString)

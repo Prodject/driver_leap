@@ -81,18 +81,20 @@ private:
 private:
 	CustomController::ControllerData *controllerData;
 	SocketReaderPlugin::SerialReader *serialReader;
+	SocketReaderPlugin::SerialReader *serialReader2;
 	SocketReaderPlugin::UdpSocket *udpReader;
 	std::thread udpReaderThread;
 	std::thread serialReaderThread;
+	std::thread serialReaderThread2;
 	bool useDeviceRotation;
-	bool useLeftHandOrientation;
+	bool useLeftHandController;
 	bool useRightHandController;
 	char hand1ComPort[30];
 	char hand2ComPort[30];
 
 	// Custom controller functions
 public:
-	void InitializeSerialReader(char *handOneCOM, char *handTwoCOM);
+	void InitializeSerialReaders(char *handOneCOM, char *handTwoCOM);
 	void InitializeUdpReader();
 private:
 	static void ReadFromUdpLoop(CustomController::ControllerData *controllerData, SocketReaderPlugin::UdpSocket *socket);

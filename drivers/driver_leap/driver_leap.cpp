@@ -405,7 +405,7 @@ vr::EVRInitError CServerDriver_Leap::Init( vr::IDriverLog * pDriverLog, vr::ISer
 	bool useUdp = settings->GetBool("combinedLeap", "useUdpController", true);
 	bool useSerial = settings->GetBool("combinedLeap", "useSerialController", true);
 	useDeviceRotation = settings->GetBool("combinedLeap", "useDeviceRotation", true);
-	useLeftHandOrientation = settings->GetBool("combinedLeap", "useLeftController", false);
+	useLeftHandController = settings->GetBool("combinedLeap", "useLeftController", false);
 	useRightHandController = settings->GetBool("combinedLeap", "useRightController", true);
 	settings->GetString("combinedLeap", "comPort1", hand1ComPort, sizeof(hand1ComPort), "");
 	settings->GetString("combinedLeap", "comPort2", hand2ComPort, sizeof(hand2ComPort), "");
@@ -413,13 +413,14 @@ vr::EVRInitError CServerDriver_Leap::Init( vr::IDriverLog * pDriverLog, vr::ISer
 	DriverLog("Custom controller settings read: UDP: %s, Serial: %s", useUdp ? "true" : "false", useSerial ? "true" : "false");
 	controllerData = new CustomController::ControllerData;
 	controllerData->useControllerOrientation = useDeviceRotation;
-	controllerData->useLeftControllerOrientation = useLeftHandOrientation;
-	controllerData->useRightControllerOrientation = useRightHandController;
+	controllerData->useLeftController = useLeftHandController;
+	controllerData->useRightController = useRightHandController;
 
 	if (useSerial)
 	{
 		serialReader = new SocketReaderPlugin::SerialReader;
-		InitializeSerialReader(hand1ComPort, hand2ComPort);
+		serialReader2 = new SocketReaderPlugin::SerialReader;
+		InitializeSerialReaders(hand1ComPort, hand2ComPort);
 	}
 
 	if (useUdp)
@@ -461,6 +462,13 @@ void CServerDriver_Leap::Cleanup()
 		serialReaderThread.join();
 		delete serialReader;
 		serialReader = NULL;
+	}
+
+	if (serialReader2)
+	{
+		serialReaderThread2.join();
+		delete serialReader2;
+		serialReader2 = NULL;
 	}
 
 	if (udpReader)
@@ -609,10 +617,17 @@ void CServerDriver_Leap::LaunchLeapMonitor( const char * pchDriverInstallDir )
 #endif
 }
 
-void CServerDriver_Leap::InitializeSerialReader(char *handOneCOM, char *handTwoCOM)
+void CServerDriver_Leap::InitializeSerialReaders(char *handOneCOM, char *handTwoCOM)
 {
 	DriverLog("Start serial reader initialization");
-	serialReaderThread = std::thread(ReadFromSerialLoop, controllerData, serialReader, handOneCOM);
+	if (handOneCOM && handOneCOM != "")
+	{
+		serialReaderThread = std::thread(ReadFromSerialLoop, controllerData, serialReader, handOneCOM);
+	}
+	if (handTwoCOM && handTwoCOM != "")
+	{
+		serialReaderThread2 = std::thread(ReadFromSerialLoop, controllerData, serialReader2, handTwoCOM);
+	}
 }
 
 void CServerDriver_Leap::InitializeUdpReader()
@@ -1064,9 +1079,9 @@ void CLeapHmdLatest::UpdateControllerState(Frame &frame, CustomController::Contr
 		return;
 
 	// REMOVE
-	if (m_nId == LEFT_CONTROLLER)
+	if (!((m_nId == LEFT_CONTROLLER && controllerData->useLeftController) || (m_nId == RIGHT_CONTROLLER && controllerData->useRightController)))
 	{
-#pragma region Original
+#pragma region Leap motion buttons
 		float scores[GestureMatcher::NUM_GESTURES];
 		handFound = matcher.MatchGestures(frame, which, scores);
 
@@ -1392,16 +1407,24 @@ void CLeapHmdLatest::UpdateTrackingState(Frame &frame, CustomController::Control
               { direction.x, direction.z, direction.y } };
 
 			if (controllerData->useControllerOrientation &&
-				((m_nId == LEFT_CONTROLLER && controllerData->useLeftControllerOrientation ||
-					m_nId == RIGHT_CONTROLLER && controllerData->useRightControllerOrientation)))
+				((m_nId == LEFT_CONTROLLER && controllerData->useLeftController ||
+					m_nId == RIGHT_CONTROLLER && controllerData->useRightController)))
 			{
 				if (m_nId == RIGHT_CONTROLLER)
 				{
 					m_Pose.qRotation = controllerData->GetRightOrientation();
+					if (controllerData->rightState.btn_magicMove)
+					{
+						m_Pose.vecPosition[2] *= -1.0f;
+					}
 				}
 				else if (m_nId == LEFT_CONTROLLER)
 				{
 					m_Pose.qRotation = controllerData->GetLeftOrientation();
+					if (controllerData->leftState.btn_magicMove)
+					{
+						m_Pose.vecPosition[2] *= -1.0f;
+					}
 				}
 				m_hmdRot.w *= -1.0f;
 				m_Pose.qRotation = m_Pose.qRotation * m_hmdRot;

@@ -44,6 +44,7 @@ namespace CustomController
 		bool btn_menu = false;
 		bool btn_system = false;
 		bool btn_grip = false;
+		bool btn_magicMove = false;
 		bool trackpad_touched = false;
 		Vector3 orientation; //TODO: remove the euler orientation.
 		vr::HmdQuaternion_t orientationQuat;
@@ -65,8 +66,8 @@ namespace CustomController
 		ButtonStates rightState;
 		ButtonStates leftState;
 		bool useControllerOrientation;
-		bool useLeftControllerOrientation;
-		bool useRightControllerOrientation;
+		bool useLeftController;
+		bool useRightController;
 
 	public:
 		ControllerData();
