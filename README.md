@@ -1,13 +1,22 @@
-# Leap Motion Driver for SteamVR
+# Leap Motion + External orientation driver for SteamVR
+# Note that this is all work in progress, and experimental. The goal was to make something, that can deliver a usable emulation of the Vive controllers, to be able to develop for it, without the real thing. 
+## What is this?
+This is basically a modification of cbuchner1's leap motion driver for SteamVR (https://github.com/cbuchner1/driver_leap). The main difference is, that here, the leap motion only provides the positional data. Instead of the gesture based controls, I used a custom built controller, with a built-in IMU, to provide orientation data. With this I have more accurate and much smoother rotation, especially with closed hands.
+
+## Some notes about the code
+If you look at the code, keep in mind, that this project is basically an experiment. What do I mean by that? The code is working, but it's not pretty, not well documented and it's far from optimal.
+Also, as it's based on an existing driver, which was based on the very not up-to-date Razer Hydra driver, published by Valve, it's still using OpenVR 1.0. Currently, it's working with the latest SteamVR beta, but it's possible, that with time something will break the backwards compatibility. I planned to update the OpenVR library under the driver, but the current version is very different from the original, and I didn't have the time to do it.
+
 
 ## Installation of this driver.
 
 - Get the Leap Motion Orion Beta runtimes https://developer.leapmotion.com/get-started
 - Install the Visual C++ 2015 Update 2 redistributables (32 and 64 bits) https://www.microsoft.com/en-us/download/details.aspx?id=51682
-- Download the most recent zip file from the Releases section of this project and run the contained exe setup program https://github.com/cbuchner1/driver_leap/releases
+- Download the source and compile it for yourself, or use the files in the "Compiled" folder. Just copy the "leap" folder into the "Steam\steamapps\common\SteamVR\drivers\" folder.
+- Configure the driver's settings in the Steam/config/steamvr.vrsettings file. (the settings are detailed below)
+- Start the Leap Motion service, then SteamVR. You should be good to go.
 
-Start SteamVR to see if two additional controllers show up (they should be blinking if your hands are
-not in the field of view of the Leap Motion, solid otherwise).
+## 
 
 ### Troubleshooting
 
