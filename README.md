@@ -7,6 +7,11 @@ This is basically a modification of cbuchner1's leap motion driver for SteamVR (
 If you look at the code, keep in mind, that this project is basically an experiment. What do I mean by that? The code is working, but it's not pretty, not well documented and it's far from optimal.
 Also, as it's based on an existing driver, which was based on the very not up-to-date Razer Hydra driver, published by Valve, it's still using OpenVR 1.0. Currently, it's working with the latest SteamVR beta, but it's possible, that with time something will break the backwards compatibility. I planned to update the OpenVR library under the driver, but the current version is very different from the original, and I didn't have the time to do it.
 
+# The controllers
+- The first prototype was an Android application, which used UDP packets to send the data to the PC. This application can be found here:
+https://github.com/peter10110/Android-SteamVR-controller
+- After the prototype was complete, and it worked, I started to build two custom, Arduino-based controllers. These are using USB to send the data on serial ports. These are working much better, than the phone-based prototype. The source code, and some photos of the build process can be found here:
+https://github.com/peter10110/Arduino-SteamVR-controller/
 
 ## Installation of this driver.
 
@@ -76,6 +81,9 @@ The fields explained:
 - Raw Data (Some tricks needed, for eg. to get the sword from your back, but with pistol, it's quite good.)
 - Project Soulus (There are problems with the touchpad, but it's completely playable)
 
+# Special thanks
+Thanks to Florian Maurer, for inspiring my procect, by his very similar VR controller. His project can be found here:
+http://flrnmrr.com/2016/11/30/arduino-vive-controller-emulation
 
 ## Building from Sourcecode (Developers only)
 
