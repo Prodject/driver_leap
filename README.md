@@ -79,7 +79,7 @@ The fields explained:
 ### Games/Experiences I've tested.
 - The Lab (Some experiences work. The main problem is the limited FOV of the Leap Motion.)
 - Raw Data (Some tricks needed, for eg. to get the sword from your back, but with pistol, it's quite good.)
-- Project Soulus (There are problems with the touchpad, but it's completely playable)
+- The Soulus Project (There are problems with the touchpad, but it's completely playable)
 
 # Special thanks
 Thanks to Florian Maurer, for inspiring my procect, by his very similar VR controller. His project can be found here:
