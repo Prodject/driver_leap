@@ -1,5 +1,5 @@
 # Leap Motion + External orientation driver for SteamVR
-# Note that this is all work in progress, and experimental. The goal was to make something, that can deliver a usable emulation of the Vive controllers, to be able to develop for it, without the real thing. 
+### Note that this is all work in progress, and experimental. The goal was to make something, that can deliver a usable emulation of the Vive controllers, to be able to develop for it, without the real thing. 
 ## What is this?
 This is basically a modification of cbuchner1's leap motion driver for SteamVR (https://github.com/cbuchner1/driver_leap). The main difference is, that here, the leap motion only provides the positional data. Instead of the gesture based controls, I used a custom built controller, with a built-in IMU, to provide orientation data. With this I have more accurate and much smoother rotation, especially with closed hands.
 
@@ -16,7 +16,54 @@ Also, as it's based on an existing driver, which was based on the very not up-to
 - Configure the driver's settings in the Steam/config/steamvr.vrsettings file. (the settings are detailed below)
 - Start the Leap Motion service, then SteamVR. You should be good to go.
 
-## 
+## Configuration
+You have to add a new section, called "combinedLeap" to the existing steamvr.vrsettings file.
+For example, here is my current vrsettings file:
+
+```
+#!json
+{
+   "audio" : {
+      "onRecordDevice" : "{0.0.1.00000000}.{06b9c968-1d16-44e1-9143-5f619d64a142}"
+   },
+   "collisionBounds" : {
+      "CollisionBoundsColorGammaA" : 147
+   },
+   "combinedLeap" : {
+      "comPort1" : "COM3",
+      "comPort2" : "COM5",
+      "useDeviceRotation" : true,
+      "useLeftController" : true,
+      "useRightController" : true,
+      "useUdpController" : false
+   },
+   "compositor" : {
+      "renderTargetMultiplier" : 1
+   },
+   "keyboard" : {
+      "TutorialCompletions" : 1
+   },
+   "modelskins" : {
+      "stage" : "",
+      "stage_PublishedFileId" : "",
+      "vr_controller_vive_1_5" : "C:\\Program Files (x86)\\Steam\\steamapps\\workshop\\content\\250820\\725853315\\vr_controller_vive_1_5\\vr_controller_vive_1_5.obj",
+      "vr_controller_vive_1_5_PublishedFileId" : "725853315"
+   },
+   "steamvr" : {
+      "activateMultipleDrivers" : true,
+      "allowReprojection" : true,
+      "background" : "C:\\Program Files (x86)\\Steam\\steamapps\\workshop\\content\\250820\\679490100\\Tron2.png",
+      "defaultMirrorView" : 2,
+      "directModeEdidPid" : 4121,
+      "directModeEdidVid" : 53838,
+      "mirrorViewGeometry" : "2168 0 880 948",
+      "playAreaColor" : "#FFFFFF4F",
+      "showMirrorView" : true
+   }
+}
+```
+
+
 
 ### Troubleshooting
 
