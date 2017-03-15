@@ -6,7 +6,6 @@
 #include <math.h>
 #include <stdlib.h>
 #include "openvr_driver.h"
-#include "madgwick_algorithm_c\MahonyAHRS\MahonyAHRS.h"
 
 
 namespace CustomController
@@ -45,11 +44,12 @@ namespace CustomController
 		bool btn_system = false;
 		bool btn_grip = false;
 		bool btn_magicMove = false;
+		bool btn_magicFar = false;
 		bool trackpad_touched = false;
 		Vector3 orientation; //TODO: remove the euler orientation.
 		vr::HmdQuaternion_t orientationQuat;
-		vr::HmdQuaternion_t centerQuaternion;
-		vr::HmdQuaternion_t zeroQuaternion;
+		vr::HmdQuaternion_t hmdCenterQuaternion;
+		vr::HmdQuaternion_t controllerZeroQuaternion;
 		void PrintToConsole();
 		void ResetCenter();
 		void ResetZero();
@@ -62,6 +62,7 @@ namespace CustomController
 	private:
 		vr::HmdQuaternion_t currentHmdRotation;
 		vr::HmdQuaternion_t deg90_angleCorrection;
+		vr::HmdQuaternion_t gripAngleCorrectionQuat;
 	public:
 		ButtonStates rightState;
 		ButtonStates leftState;
@@ -79,5 +80,6 @@ namespace CustomController
 		vr::HmdQuaternion_t* normalizeQauternion(vr::HmdQuaternion_t* quat);
 		vr::HmdQuaternion_t ControllerData::rotate_around_axis(float angleX, float angleY, float angleZ, const float &a);
 		void SetCurrentHMDOrientation(vr::HmdQuaternion_t hmdRot);
+		void SetGripAngleOffset(float offset);
 	};
 }

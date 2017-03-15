@@ -8,9 +8,6 @@
     <Filter Include="CustomController">
       <UniqueIdentifier>{9e3077f9-21f3-4c70-8ced-ac61578bc189}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Mahony">
-      <UniqueIdentifier>{b947de51-3941-4576-a9f8-fca954cf86f2}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp" />
@@ -26,9 +23,6 @@
     <ClCompile Include="SerialReader.cpp">
       <Filter>CustomController</Filter>
     </ClCompile>
-    <ClCompile Include="madgwick_algorithm_c\MahonyAHRS\MahonyAHRS.c">
-      <Filter>Mahony</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="driver_leap.h" />
@@ -43,9 +37,6 @@
     </ClInclude>
     <ClInclude Include="SerialReader.h">
       <Filter>CustomController</Filter>
-    </ClInclude>
-    <ClInclude Include="madgwick_algorithm_c\MahonyAHRS\MahonyAHRS.h">
-      <Filter>Mahony</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

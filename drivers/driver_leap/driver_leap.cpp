@@ -383,6 +383,42 @@ CServerDriver_Leap::CServerDriver_Leap()
 CServerDriver_Leap::~CServerDriver_Leap()
 {
     DriverLog("CServerDriver_Leap::~CServerDriver_Leap()\n");
+	if (serialReader)
+	{
+		delete serialReader;
+		serialReader = NULL;
+	}
+
+	if (serialReader2)
+	{
+		delete serialReader2;
+		serialReader2 = NULL;
+	}
+
+	if (serialReaderThread.joinable())
+	{
+		serialReaderThread.join();
+	}
+
+	if (serialReaderThread2.joinable())
+	{
+		serialReaderThread2.join();
+	}
+
+	if (udpReader)
+	{
+		udpReader->Close();
+		udpReaderThread.join();
+		delete udpReader;
+		udpReader = NULL;
+	}
+
+	if (controllerData)
+	{
+		delete controllerData;
+		controllerData = NULL;
+	}
+
     Cleanup();
 }
 
@@ -409,12 +445,14 @@ vr::EVRInitError CServerDriver_Leap::Init( vr::IDriverLog * pDriverLog, vr::ISer
 	useRightHandController = settings->GetBool("combinedLeap", "useRightController", true);
 	settings->GetString("combinedLeap", "comPort1", hand1ComPort, sizeof(hand1ComPort), "");
 	settings->GetString("combinedLeap", "comPort2", hand2ComPort, sizeof(hand2ComPort), "");
+	float gripAngleOffset = settings->GetFloat("combinedLeap", "gripAngleOffset", 0.0f);
 
 	DriverLog("Custom controller settings read: UDP: %s, Serial: %s", useUdp ? "true" : "false", useSerial ? "true" : "false");
 	controllerData = new CustomController::ControllerData;
 	controllerData->useControllerOrientation = useDeviceRotation;
 	controllerData->useLeftController = useLeftHandController;
 	controllerData->useRightController = useRightHandController;
+	controllerData->SetGripAngleOffset(gripAngleOffset);
 
 	if (useSerial)
 	{
@@ -450,34 +488,6 @@ void CServerDriver_Leap::Cleanup()
         m_Controller->removeListener(*this);
         m_Controller = NULL;
     }
-
-	if (controllerData)
-	{
-		delete controllerData;
-		controllerData = NULL;
-	}
-
-	if (serialReader)
-	{
-		serialReaderThread.join();
-		delete serialReader;
-		serialReader = NULL;
-	}
-
-	if (serialReader2)
-	{
-		serialReaderThread2.join();
-		delete serialReader2;
-		serialReader2 = NULL;
-	}
-
-	if (udpReader)
-	{
-		udpReader->Close();
-		udpReaderThread.join();
-		delete udpReader;
-		udpReader = NULL;
-	}
 
     // clean up any controller objects we've created
     for (auto it = m_vecControllers.begin(); it != m_vecControllers.end(); ++it)
@@ -656,9 +666,7 @@ void CServerDriver_Leap::ReadFromUdpLoop(CustomController::ControllerData * cont
 
 void CServerDriver_Leap::ReadFromSerialLoop(CustomController::ControllerData * controllerData, SocketReaderPlugin::SerialReader * serialReader, char *comPort)
 {
-	//serialReader->Init("\\\\.\\COM12"); //TODO: read COM port from settings
 	serialReader->Init(comPort);
-	//TODO: proper buffer management
 	const int dataLength = 256;
 	const int secBufferMaxSize = 500;
 	char readBuffer[dataLength + 1];
@@ -1417,6 +1425,10 @@ void CLeapHmdLatest::UpdateTrackingState(Frame &frame, CustomController::Control
 					{
 						m_Pose.vecPosition[2] *= -1.0f;
 					}
+					else if (controllerData->rightState.btn_magicFar)
+					{
+						m_Pose.vecPosition[2] *= 2.0f;
+					}
 				}
 				else if (m_nId == LEFT_CONTROLLER)
 				{
@@ -1424,6 +1436,10 @@ void CLeapHmdLatest::UpdateTrackingState(Frame &frame, CustomController::Control
 					if (controllerData->leftState.btn_magicMove)
 					{
 						m_Pose.vecPosition[2] *= -1.0f;
+					}
+					else if (controllerData->leftState.btn_magicFar)
+					{
+						m_Pose.vecPosition[2] *= 2.0f;
 					}
 				}
 				m_hmdRot.w *= -1.0f;

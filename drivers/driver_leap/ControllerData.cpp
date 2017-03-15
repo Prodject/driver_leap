@@ -85,7 +85,9 @@ namespace CustomController
 
 		// Buttons
 		int buttonState = stoi(parsed[1]);
-		targetState->btn_magicMove = (buttonState & 64) > 0;
+		
+		targetState->btn_magicFar = (buttonState & 64) > 0;
+		targetState->btn_magicMove = (buttonState & 32) > 0;
 		targetState->btn_trigger = (buttonState & 16) > 0;
 		targetState->btn_touchpadPress = (buttonState & 8) > 0;
 		targetState->btn_menu = (buttonState & 4) > 0;
@@ -104,7 +106,7 @@ namespace CustomController
 		targetState->orientationQuat.y = stof(parsed[6]);
 		targetState->orientationQuat.z = stof(parsed[7]);
 
-		if ((buttonState & 32) > 0)
+		if ((buttonState & 128) > 0)
 		{
 			// Reset button
 			targetState->SetAsCenter(currentHmdRotation);
@@ -223,12 +225,12 @@ namespace CustomController
 
 	vr::HmdQuaternion_t ControllerData::GetLeftOrientation()
 	{
-		return (leftState.orientationQuat * leftState.zeroQuaternion) * leftState.centerQuaternion;
+		return leftState.orientationQuat * leftState.controllerZeroQuaternion * leftState.hmdCenterQuaternion;
 	}
 
 	vr::HmdQuaternion_t ControllerData::GetRightOrientation()
 	{
-		return (rightState.orientationQuat * rightState.zeroQuaternion) * rightState.centerQuaternion;
+		return rightState.orientationQuat * rightState.controllerZeroQuaternion * rightState.hmdCenterQuaternion;
 	}
 
 	vr::HmdQuaternion_t* ControllerData::normalizeQauternion(vr::HmdQuaternion_t * quat)
@@ -255,49 +257,54 @@ namespace CustomController
 
 	void ButtonStates::ResetCenter()
 	{
-		centerQuaternion.w = 1.0f;
-		centerQuaternion.x = 0.0f;
-		centerQuaternion.y = 0.0f;
-		centerQuaternion.z = 0.0f;
+		hmdCenterQuaternion.w = 1.0f;
+		hmdCenterQuaternion.x = 0.0f;
+		hmdCenterQuaternion.y = 0.0f;
+		hmdCenterQuaternion.z = 0.0f;
 	}
 
 	void ButtonStates::ResetZero()
 	{
-		zeroQuaternion.w = 1.0f;
-		zeroQuaternion.x = 0.0f;
-		zeroQuaternion.y = 0.0f;
-		zeroQuaternion.z = 0.0f;
+		controllerZeroQuaternion.w = 1.0f;
+		controllerZeroQuaternion.x = 0.0f;
+		controllerZeroQuaternion.y = 0.0f;
+		controllerZeroQuaternion.z = 0.0f;
 	}
 
 	void ButtonStates::SetAsCenter(vr::HmdQuaternion_t hmdRot)
 	{
-		centerQuaternion = hmdRot;
-		double d = centerQuaternion.w * centerQuaternion.w + centerQuaternion.x * centerQuaternion.x
-			+ centerQuaternion.y * centerQuaternion.y + centerQuaternion.z * centerQuaternion.z;
-		centerQuaternion.w = (-1.0f * centerQuaternion.w) / d;
-		centerQuaternion.x = (-1.0f * centerQuaternion.x) / d;
-		centerQuaternion.y = (-1.0f * centerQuaternion.y) / d;
-		centerQuaternion.z = (-1.0f * centerQuaternion.z) / d;
+		hmdCenterQuaternion = hmdRot;
+		double d = hmdCenterQuaternion.w * hmdCenterQuaternion.w + hmdCenterQuaternion.x * hmdCenterQuaternion.x
+			+ hmdCenterQuaternion.y * hmdCenterQuaternion.y + hmdCenterQuaternion.z * hmdCenterQuaternion.z;
+		hmdCenterQuaternion.w = (-1.0f * hmdCenterQuaternion.w) / d;
+		hmdCenterQuaternion.x = (-1.0f * hmdCenterQuaternion.x) / d;
+		hmdCenterQuaternion.y = (-1.0f * hmdCenterQuaternion.y) / d;
+		hmdCenterQuaternion.z = (-1.0f * hmdCenterQuaternion.z) / d;
 
-		//centerQuaternion.w = centerQuaternion.w * -1.0f;
+		//hmdCenterQuaternion.w = hmdCenterQuaternion.w * -1.0f;
 	}
 
 	void ButtonStates::SetAsZero(vr::HmdQuaternion_t zeroQuat)
 	{
-		zeroQuaternion = zeroQuat;
-		double d = zeroQuaternion.w * zeroQuaternion.w + zeroQuaternion.x * zeroQuaternion.x
-			+ zeroQuaternion.y * zeroQuaternion.y + zeroQuaternion.z * zeroQuaternion.z;
-		zeroQuaternion.w = (-1.0f * zeroQuaternion.w) / d;
-		zeroQuaternion.x = (-1.0f * zeroQuaternion.x) / d;
-		zeroQuaternion.y = (-1.0f * zeroQuaternion.y) / d;
-		zeroQuaternion.z = (-1.0f * zeroQuaternion.z) / d;
+		controllerZeroQuaternion = zeroQuat;
+		double d = controllerZeroQuaternion.w * controllerZeroQuaternion.w + controllerZeroQuaternion.x * controllerZeroQuaternion.x
+			+ controllerZeroQuaternion.y * controllerZeroQuaternion.y + controllerZeroQuaternion.z * controllerZeroQuaternion.z;
+		controllerZeroQuaternion.w = (-1.0f * controllerZeroQuaternion.w) / d;
+		controllerZeroQuaternion.x = (-1.0f * controllerZeroQuaternion.x) / d;
+		controllerZeroQuaternion.y = (-1.0f * controllerZeroQuaternion.y) / d;
+		controllerZeroQuaternion.z = (-1.0f * controllerZeroQuaternion.z) / d;
 
-		zeroQuaternion.w = zeroQuaternion.w * -1.0f;
+		controllerZeroQuaternion.w = controllerZeroQuaternion.w * -1.0f;
 	}
 
 	void ControllerData::SetCurrentHMDOrientation(vr::HmdQuaternion_t hmdRot)
 	{
 		currentHmdRotation = hmdRot;
+	}
+
+	void ControllerData::SetGripAngleOffset(float offset)
+	{
+		gripAngleCorrectionQuat = rotate_around_axis(1.0f, 0.0f, 0.0f, -offset);
 	}
 
 	std::string Vector3::ToString()
