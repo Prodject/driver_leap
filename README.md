@@ -30,7 +30,7 @@ For example, here is my current vrsettings file:
       "CollisionBoundsColorGammaA" : 147
    },
    "combinedLeap" : {
-      "comPort1" : "COM3",
+      "comPort1" : "\\\\.\\COM12",
       "comPort2" : "COM5",
       "useDeviceRotation" : true,
       "useLeftController" : true,
