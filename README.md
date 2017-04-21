@@ -75,6 +75,9 @@ The fields explained:
 *"useLeftController" : true, // Use a real controller, instead of gestures on the left hand.
 *"useRightController" : true, // Use a real controller, instead of gestures on the right hand.
 *"useUdpController" : false // Listen for UDP controller packets, on the 5555 port.
+*"gripPositionOffsetX" : 0, // The controller's positional offset to the palm position, on the X axis.
+*"gripPositionOffsetY" : 0.1, // The controller's positional offset to the palm position, on the Y axis.
+*"gripPositionOffsetZ" : 0, // The controller's positional offset to the palm position, on the Z axis.
 
 ### Games/Experiences I've tested.
 - The Lab (Some experiences work. The main problem is the limited FOV of the Leap Motion.)
