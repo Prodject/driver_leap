@@ -307,6 +307,18 @@ namespace CustomController
 		gripAngleCorrectionQuat = rotate_around_axis(1.0f, 0.0f, 0.0f, -offset);
 	}
 
+	void ControllerData::SetGripPositionOffset(float x, float y, float z)
+	{
+		controllerPositionOffset[0] = x;
+		controllerPositionOffset[1] = y;
+		controllerPositionOffset[2] = z;
+	}
+
+	double* ControllerData::GetGripPositionOffset()
+	{
+		return controllerPositionOffset;
+	}
+
 	std::string Vector3::ToString()
 	{
 		return to_string(x) + ", " + to_string(y) + ", " + to_string(z);

@@ -63,6 +63,7 @@ namespace CustomController
 		vr::HmdQuaternion_t currentHmdRotation;
 		vr::HmdQuaternion_t deg90_angleCorrection;
 		vr::HmdQuaternion_t gripAngleCorrectionQuat;
+		double controllerPositionOffset[3] = { 0,0,0 };
 	public:
 		ButtonStates rightState;
 		ButtonStates leftState;
@@ -81,5 +82,7 @@ namespace CustomController
 		vr::HmdQuaternion_t ControllerData::rotate_around_axis(float angleX, float angleY, float angleZ, const float &a);
 		void SetCurrentHMDOrientation(vr::HmdQuaternion_t hmdRot);
 		void SetGripAngleOffset(float offset);
+		void SetGripPositionOffset(float x, float y, float z);
+		double* GetGripPositionOffset();
 	};
 }

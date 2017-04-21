@@ -446,6 +446,10 @@ vr::EVRInitError CServerDriver_Leap::Init( vr::IDriverLog * pDriverLog, vr::ISer
 	settings->GetString("combinedLeap", "comPort1", hand1ComPort, sizeof(hand1ComPort), "");
 	settings->GetString("combinedLeap", "comPort2", hand2ComPort, sizeof(hand2ComPort), "");
 	float gripAngleOffset = settings->GetFloat("combinedLeap", "gripAngleOffset", 0.0f);
+	float gripPosOffsetX = settings->GetFloat("combinedLeap", "gripPositionOffsetX", 0.0f);
+	float gripPosOffsetY = settings->GetFloat("combinedLeap", "gripPositionOffsetY", 0.0f);
+	float gripPosOffsetZ = settings->GetFloat("combinedLeap", "gripPositionOffsetZ", 0.0f);
+
 
 	DriverLog("Custom controller settings read: UDP: %s, Serial: %s", useUdp ? "true" : "false", useSerial ? "true" : "false");
 	controllerData = new CustomController::ControllerData;
@@ -453,6 +457,7 @@ vr::EVRInitError CServerDriver_Leap::Init( vr::IDriverLog * pDriverLog, vr::ISer
 	controllerData->useLeftController = useLeftHandController;
 	controllerData->useRightController = useRightHandController;
 	controllerData->SetGripAngleOffset(gripAngleOffset);
+	controllerData->SetGripPositionOffset(gripPosOffsetX, gripPosOffsetY, gripPosOffsetZ);
 
 	if (useSerial)
 	{
@@ -1420,6 +1425,7 @@ void CLeapHmdLatest::UpdateTrackingState(Frame &frame, CustomController::Control
 			{
 				if (m_nId == RIGHT_CONTROLLER)
 				{
+					m_Pose.vecPosition[0] += controllerData->GetGripPositionOffset()[0];
 					m_Pose.qRotation = controllerData->GetRightOrientation();
 					if (controllerData->rightState.btn_magicMove)
 					{
@@ -1432,6 +1438,7 @@ void CLeapHmdLatest::UpdateTrackingState(Frame &frame, CustomController::Control
 				}
 				else if (m_nId == LEFT_CONTROLLER)
 				{
+					m_Pose.vecPosition[0] -= controllerData->GetGripPositionOffset()[0];
 					m_Pose.qRotation = controllerData->GetLeftOrientation();
 					if (controllerData->leftState.btn_magicMove)
 					{
@@ -1442,6 +1449,9 @@ void CLeapHmdLatest::UpdateTrackingState(Frame &frame, CustomController::Control
 						m_Pose.vecPosition[2] *= 2.0f;
 					}
 				}
+				m_Pose.vecPosition[1] += controllerData->GetGripPositionOffset()[1];
+				m_Pose.vecPosition[2] += controllerData->GetGripPositionOffset()[2];
+
 				m_hmdRot.w *= -1.0f;
 				m_Pose.qRotation = m_Pose.qRotation * m_hmdRot;
 			}
